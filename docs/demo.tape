@@ -7,7 +7,8 @@ Set Height 720
 Set Padding 20
 Set Theme "Dracula"
 Hide
-Type "d=$(mktemp -d) && cd $d && printf '%s' '{\"name\":\"billing-api\",\"dependencies\":{\"next\":\"14\",\"react\":\"18\"},\"devDependencies\":{\"typescript\":\"5\",\"eslint\":\"8\"},\"scripts\":{\"build\":\"next build\",\"test\":\"vitest\",\"lint\":\"eslint .\",\"dev\":\"next dev\"}}' > package.json && echo '{}' > tsconfig.json && export PS1='$ ' && clear" Enter
+Type "cd /tmp && rm -rf billing-api && mkdir billing-api && cd billing-api && printf 'module billing-api\ngo 1.22\n' > go.mod && export PS1='$ ' && clear"
+Enter
 Show
 Sleep 600ms
 Type "# scaffold any project for Claude Code, Codex & Antigravity"

@@ -1,0 +1,28 @@
+name: release
+# Publish to npm with provenance on a version tag — NO tokens (OIDC trusted publishing).
+# One-time setup on npmjs.com: package -> Settings -> Trusted Publishing -> add publisher
+#   owner: alexxanderdiaz · repo: ai-coding-stack · workflow: release.yml
+# Then release with:  npm version patch && git push --follow-tags
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write   # OIDC: lets npm verify the build came from this workflow
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
+      - name: Smoke tests
+        run: node test/smoke.js
+      - name: Publish (provenance, no token)
+        run: npm publish --provenance --access public

@@ -119,6 +119,14 @@ AICS_RCLONE=myremote:ai-config ./sync/backup.sh   # to your own rclone remote
 - [docs/USAGE.md](docs/USAGE.md) — end-to-end examples
 - [docs/PROJECT-INIT.md](docs/PROJECT-INIT.md) — the generated files + best practices
 
+## Releasing
+
+Publishing is automated via **npm Trusted Publishing** (OIDC + provenance, no tokens):
+1. One-time on npmjs.com: package → **Settings → Trusted Publishing** → add publisher
+   (owner `alexxanderdiaz`, repo `ai-coding-stack`, workflow `release.yml`).
+2. Then: `npm version patch && git push --follow-tags` → the `release.yml` workflow
+   runs the smoke tests and publishes with a verified provenance badge.
+
 ## License
 
 [MIT](LICENSE) © 2026 Alexander Diaz.

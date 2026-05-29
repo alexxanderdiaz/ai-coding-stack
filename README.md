@@ -75,18 +75,10 @@ Copy `skills/project-init/` into your tool's skills dir, then just say `project-
 
 ## Demo
 
-> _Replace this block with an asciinema/GIF recording (`docs/demo.gif`)._
+![ai-coding-stack project-init demo](docs/demo.gif)
 
-```console
-$ npx ai-coding-stack --init --about "REST API for recurring billing"
->> AGENTS.md created
->> CLAUDE.md created
->> GEMINI.md created
->> STATE.md created
->> Detected: TypeScript, Next.js | commands: build,test,lint,dev
->> Ready for Claude Code + Codex + Antigravity (CLAUDE.md / AGENTS.md / GEMINI.md / STATE.md)
-
-# next day, in any tool:
+```text
+# next day, in any tool — resume exactly where you left off:
 > catchup
   → reads STATE.md + git log → "Last session: added auth middleware. Next: wire Stripe webhooks."
 ```

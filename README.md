@@ -9,6 +9,8 @@ Works with **Claude Code · Codex · Antigravity** (and any tool that reads `AGE
 ![Platform](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-blue)
 ![Core](https://img.shields.io/badge/core-Node.js-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![CI](https://github.com/alexxanderdiaz/ai-coding-stack/actions/workflows/ci.yml/badge.svg)
+![npm](https://img.shields.io/npm/v/ai-coding-stack)
 
 </div>
 
@@ -70,6 +72,33 @@ Copy `skills/project-init/` into your tool's skills dir, then just say `project-
 - **Claude Code:** use `node project-init.js .`, or wire it as a skill in `~/.claude/skills/`.
 
 ---
+
+## Demo
+
+> _Replace this block with an asciinema/GIF recording (`docs/demo.gif`)._
+
+```console
+$ npx ai-coding-stack --init --about "REST API for recurring billing"
+>> AGENTS.md created
+>> CLAUDE.md created
+>> GEMINI.md created
+>> STATE.md created
+>> Detected: TypeScript, Next.js | commands: build,test,lint,dev
+>> Ready for Claude Code + Codex + Antigravity (CLAUDE.md / AGENTS.md / GEMINI.md / STATE.md)
+
+# next day, in any tool:
+> catchup
+  → reads STATE.md + git log → "Last session: added auth middleware. Next: wire Stripe webhooks."
+```
+
+## Optional: back up your own config
+
+`sync/backup.sh` archives the shareable parts of **your** `~/.claude` / `~/.codex` (secrets excluded) to a destination you choose — no personal paths baked in:
+```bash
+AICS_DEST=~/my-dotfiles ./sync/backup.sh      # to a local dir / git repo
+AICS_RCLONE=myremote:ai-config ./sync/backup.sh   # to your own rclone remote
+./sync/restore.sh ai-config-YYYYMMDD.tgz
+```
 
 ## Components
 

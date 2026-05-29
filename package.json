@@ -1,0 +1,47 @@
+{
+  "name": "ai-coding-stack",
+  "version": "0.1.0",
+  "description": "Portable toolkit for AI coding tools (Claude Code, Codex, Antigravity): install them and scaffold any project with cross-tool AGENTS.md context and session continuity.",
+  "type": "commonjs",
+  "bin": {
+    "ai-coding-stack": "setup.js",
+    "aics-init": "project-init.js"
+  },
+  "files": [
+    "setup.js",
+    "ensure-tools.js",
+    "project-init.js",
+    "lib/",
+    "hooks/",
+    "skills/",
+    "docs/",
+    "setup.sh",
+    "setup.ps1",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test/smoke.js"
+  },
+  "keywords": [
+    "ai",
+    "claude-code",
+    "codex",
+    "antigravity",
+    "agents-md",
+    "coding-agents",
+    "project-scaffolding",
+    "developer-tools",
+    "cross-platform"
+  ],
+  "license": "MIT",
+  "author": "Alexander Diaz",
+  "homepage": "https://github.com/alexxanderdiaz/ai-coding-stack",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexxanderdiaz/ai-coding-stack.git"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

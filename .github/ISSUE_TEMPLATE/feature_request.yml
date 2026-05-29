@@ -1,0 +1,36 @@
+name: 💡 Feature request
+description: Suggest an improvement or a new tool/capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do that's hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [tool install (ensure-tools), project-init / context files, continuity (STATE.md), sync, docs, new tool support, other]
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Fits the project constraints?
+      options:
+        - label: Keeps it dependency-free (plain Node)
+        - label: Works cross-platform (Windows/Linux/macOS)
+        - label: No personal/user-specific data baked in

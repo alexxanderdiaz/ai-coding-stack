@@ -1,0 +1,47 @@
+name: 🐛 Bug report
+description: Something didn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Please fill in the details below.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, and what went wrong?
+      placeholder: e.g. `node setup.js --tools` failed on Windows with ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool / component?
+      options: [setup.js, ensure-tools.js, project-init.js, detect-stack, state-snapshot hook, skill (Codex/Antigravity), other]
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of `node --version` and `ai-coding-stack` version
+      placeholder: node v20.x · ai-coding-stack 0.1.1
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Paste relevant terminal output (redact any secrets).
+      render: shell

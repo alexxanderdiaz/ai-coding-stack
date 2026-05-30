@@ -57,5 +57,14 @@ console.log("\nensure-tools:");
 try { execFileSync("node", [path.join(ROOT, "ensure-tools.js"), "all", "--check"], { stdio: "ignore" }); ok("ensure-tools --check runs"); }
 catch { bad("ensure-tools --check failed"); }
 
+// 5. ensure-tools accepts a comma list (CHECK only, no install)
+console.log("\nensure-tools selection:");
+try {
+  const out = execFileSync("node", [path.join(ROOT, "ensure-tools.js"), "claude,codex", "--check"], { encoding: "utf8" });
+  out.includes("== claude ==") ? ok("selects claude") : bad("claude not selected");
+  out.includes("== codex ==") ? ok("selects codex") : bad("codex not selected");
+  !out.includes("== antigravity ==") ? ok("excludes antigravity") : bad("antigravity wrongly included");
+} catch (e) { bad("ensure-tools list threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

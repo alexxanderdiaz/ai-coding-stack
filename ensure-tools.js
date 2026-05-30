@@ -104,7 +104,9 @@ function ensureTool(tool) {
   ensureComponent(tool, "cli");
 }
 
-const target = ARGV.find(a => !a.startsWith("--")) || "all";
+const positional = ARGV.filter(a => !a.startsWith("--"));
+let tools = positional.flatMap(a => a.split(",")).map(s => s.trim()).filter(Boolean);
+if (!tools.length || tools.includes("all")) tools = Object.keys(REG);
+tools = [...new Set(tools)];
 log(`ensure-tools (${process.platform}) — ${CHECK ? "CHECK only" : "install missing"}`);
-if (target === "all") for (const t of Object.keys(REG)) ensureTool(t);
-else ensureTool(target);
+for (const t of tools) ensureTool(t);

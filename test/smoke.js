@@ -144,5 +144,17 @@ try {
 } catch (e) { bad("install-experts threw: " + e.message); }
 fs.rmSync(itmp, { recursive: true, force: true });
 
+// 10. project-init --with-experts prints stack-matched suggestions
+console.log("\nproject-init --with-experts:");
+const ptmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-pi-"));
+try {
+  fs.writeFileSync(path.join(ptmp, "go.mod"), "module demo\ngo 1.22\n");
+  const out = execFileSync("node", [path.join(ROOT, "project-init.js"), ptmp, "--about", "rest api", "--with-experts", "--force"], { encoding: "utf8" });
+  out.includes("Suggested experts for this stack:") ? ok("prints suggestions") : bad("no suggestions printed");
+  out.includes("api-backend-pro") ? ok("suggests api-backend-pro for Go") : bad("missed api-backend-pro");
+  out.includes("code-reviewer") ? ok("suggests code-reviewer") : bad("missed code-reviewer");
+} catch (e) { bad("project-init --with-experts threw: " + e.message); }
+fs.rmSync(ptmp, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -156,5 +156,19 @@ try {
 } catch (e) { bad("project-init --with-experts threw: " + e.message); }
 fs.rmSync(ptmp, { recursive: true, force: true });
 
+// 11. sources allowlist integrity
+console.log("\nsources:");
+try {
+  const s = require(path.join(ROOT, "catalog", "sources.json"));
+  const ALLOW = new Set(["github.com"]);
+  (Array.isArray(s.sources) && s.sources.length) ? ok("has sources") : bad("no sources");
+  const ids = s.sources.map(x => x.id);
+  new Set(ids).size === ids.length ? ok("source ids unique") : bad("dup source ids");
+  s.sources.every(x => ALLOW.has(x.host)) ? ok("hosts allowlisted") : bad("host not allowlisted");
+  s.sources.every(x => { try { return new URL(x.repo).hostname === x.host; } catch { return false; } }) ? ok("repo host matches") : bad("repo/host mismatch");
+  s.sources.every(x => ["skills-dir","agents-dir","claude-plugin-marketplace"].includes(x.layout)) ? ok("layouts valid") : bad("bad layout");
+  s.sources.every(x => x.license) ? ok("licenses recorded") : bad("missing license");
+} catch (e) { bad("sources threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

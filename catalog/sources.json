@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "wshobson-agents",
+      "repo": "https://github.com/wshobson/agents",
+      "host": "github.com",
+      "layout": "claude-plugin-marketplace",
+      "paths": {
+        "skills": "plugins/*/skills",
+        "agents": "plugins/*/agents"
+      },
+      "license": "MIT",
+      "tags": ["agents", "skills", "backend", "frontend", "data", "devops", "security", "review"],
+      "description": "Large curated Claude Code plugin marketplace (83 plugins) bundling subagents and skills across backend, frontend, data, DevOps, security and code review."
+    },
+    {
+      "id": "obra-superpowers-skills",
+      "repo": "https://github.com/obra/superpowers-skills",
+      "host": "github.com",
+      "layout": "skills-dir",
+      "paths": {
+        "skills": "skills/*/*"
+      },
+      "license": "MIT",
+      "tags": ["skills", "tdd", "debugging", "collaboration", "architecture", "workflow"],
+      "description": "Community-editable skills for Claude Code's Superpowers plugin: TDD, systematic debugging, brainstorming, planning and collaboration patterns, each as a SKILL.md."
+    },
+    {
+      "id": "obra-superpowers-marketplace",
+      "repo": "https://github.com/obra/superpowers-marketplace",
+      "host": "github.com",
+      "layout": "claude-plugin-marketplace",
+      "paths": {
+        "skills": "plugins/*/skills",
+        "agents": "plugins/*/agents"
+      },
+      "license": "MIT",
+      "tags": ["skills", "workflow", "productivity", "marketplace"],
+      "description": "Jesse Vincent's Superpowers plugin marketplace listing skills, workflows and productivity tools for Claude Code."
+    }
+  ]
+}

@@ -185,6 +185,10 @@ try {
   if (made) { let threw = false; try { rejectSymlinks(d); } catch { threw = true; } threw ? ok("symlink rejected") : bad("symlink not rejected"); }
   else { ok("symlink rejected (skipped: no symlink perm)"); }
   fs.rmSync(d, { recursive: true, force: true });
+  isAllowedHost("https://github.com:22/a/b", "github.com") === false ? ok("rejects explicit port") : bad("port not rejected");
+  isAllowedHost("http://github.com/a/b", "github.com") === false ? ok("rejects http (https only)") : bad("http allowed");
+  let trav = false; try { require(path.join(ROOT, "lib", "fetch-source.js")).fetchSource({ id: "../evil", repo: "https://github.com/a/b", host: "github.com" }, fs.mkdtempSync(path.join(os.tmpdir(), "aics-fc-"))); } catch { trav = true; }
+  trav ? ok("fetchSource rejects traversal id") : bad("traversal id not rejected");
 } catch (e) { bad("fetch-source threw: " + e.message); }
 
 console.log(`\n${pass} passed, ${fail} failed`);

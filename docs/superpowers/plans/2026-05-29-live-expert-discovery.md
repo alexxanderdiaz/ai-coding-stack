@@ -182,6 +182,13 @@ Install model per pick:
       fs.writeFileSync(path.join(sd, "alpha", "SKILL.md"), "---\nname: alpha\ndescription: A skill\n---\nbody");
       const sdRes = scanSource(sd, "skills-dir", { skills: "." });
       (sdRes.length === 1 && sdRes[0].type === "skill" && sdRes[0].name === "alpha" && sdRes[0].description === "A skill") ? ok("skills-dir scan") : bad("skills-dir wrong");
+      // nested skills (skills/<cat>/<skill>/SKILL.md) with a glob path like "skills/*/*"
+      const nd = path.join(root, "nd"); fs.mkdirSync(path.join(nd, "skills", "cat", "beta"), { recursive: true });
+      fs.writeFileSync(path.join(nd, "skills", "cat", "beta", "SKILL.md"), "---\nname: beta\ndescription: Nested\n---\nb");
+      fs.mkdirSync(path.join(nd, "skills", "using-skills"), { recursive: true });
+      fs.writeFileSync(path.join(nd, "skills", "using-skills", "SKILL.md"), "---\nname: using-skills\ndescription: Shallow\n---\nb");
+      const ndRes = scanSource(nd, "skills-dir", { skills: "skills/*/*" });
+      (ndRes.some(x => x.name === "beta") && ndRes.some(x => x.name === "using-skills")) ? ok("skills-dir nested+glob+mixed-depth scan") : bad("nested/mixed skills missed");
       // agents-dir
       const ad = path.join(root, "ad"); fs.mkdirSync(ad, { recursive: true });
       fs.writeFileSync(path.join(ad, "rev.md"), "---\nid: rev\ndescription: Reviewer\n---\nbody");
@@ -212,47 +219,68 @@ Install model per pick:
     const path = require("path");
     const { parseSpec } = require(path.join(__dirname, "render-expert.js"));
 
-    function dirs(p) { try { return fs.readdirSync(p, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name); } catch { return []; } }
-    function files(p) { try { return fs.readdirSync(p, { withFileTypes: true }).filter(d => d.isFile()).map(d => d.name); } catch { return []; } }
+    function dirNames(p) { try { return fs.readdirSync(p, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name); } catch { return []; } }
     function desc(file) { try { return parseSpec(fs.readFileSync(file, "utf8")).meta.description || ""; } catch { return ""; } }
+
+    // recursively collect files matching predicate(name); skip .git
+    function walkFiles(base, predicate, acc) {
+      acc = acc || [];
+      let ents; try { ents = fs.readdirSync(base, { withFileTypes: true }); } catch { return acc; }
+      for (const e of ents) {
+        if (e.name === ".git") continue;
+        const p = path.join(base, e.name);
+        if (e.isDirectory()) walkFiles(p, predicate, acc);
+        else if (e.isFile() && predicate(e.name)) acc.push(p);
+      }
+      return acc;
+    }
+    // path prefix up to the first segment containing "*" (so "skills/*/*" -> "skills", "." -> ".")
+    function globPrefix(p) {
+      const keep = [];
+      for (const seg of String(p || ".").split("/")) { if (seg.includes("*")) break; keep.push(seg); }
+      return keep.join("/") || ".";
+    }
+    function isAgentMd(name) { return name.endsWith(".md") && name.toLowerCase() !== "readme.md" && name !== "SKILL.md"; }
+
+    // a skill = any directory directly containing a SKILL.md (found recursively)
+    function collectSkills(base, group) {
+      return walkFiles(base, n => n === "SKILL.md").map(f => {
+        const dir = path.dirname(f);
+        return { type: "skill", name: path.basename(dir), group, dir, file: f, description: desc(f) };
+      });
+    }
+    // an agent = any *.md (not README/SKILL.md) found recursively under base
+    function collectAgents(base, group) {
+      return walkFiles(base, isAgentMd).map(f => ({ type: "agent", name: path.basename(f).replace(/\.md$/, ""), group, file: f, description: desc(f) }));
+    }
 
     function scanSource(rootPath, layout, paths) {
       paths = paths || {};
-      const out = [];
+      let out = [];
       if (layout === "skills-dir") {
-        const base = path.join(rootPath, paths.skills || ".");
-        for (const d of dirs(base)) {
-          const f = path.join(base, d, "SKILL.md");
-          if (fs.existsSync(f)) out.push({ type: "skill", name: d, dir: path.join(base, d), file: f, description: desc(f) });
-        }
+        out = collectSkills(path.join(rootPath, globPrefix(paths.skills || ".")));
       } else if (layout === "agents-dir") {
-        const base = path.join(rootPath, paths.agents || ".");
-        for (const e of files(base)) if (e.endsWith(".md") && e.toLowerCase() !== "readme.md") {
-          const f = path.join(base, e);
-          out.push({ type: "agent", name: e.replace(/\.md$/, ""), file: f, description: desc(f) });
-        }
+        out = collectAgents(path.join(rootPath, globPrefix(paths.agents || ".")));
       } else if (layout === "claude-plugin-marketplace") {
+        // only LOCAL plugins are scannable; remote-url marketplaces yield nothing here
         const proot = path.join(rootPath, "plugins");
-        for (const plugin of dirs(proot)) {
-          const sdir = path.join(proot, plugin, "skills");
-          for (const d of dirs(sdir)) {
-            const f = path.join(sdir, d, "SKILL.md");
-            if (fs.existsSync(f)) out.push({ type: "skill", name: d, group: plugin, dir: path.join(sdir, d), file: f, description: desc(f) });
-          }
-          const adir = path.join(proot, plugin, "agents");
-          for (const e of files(adir)) if (e.endsWith(".md") && e.toLowerCase() !== "readme.md") {
-            const f = path.join(adir, e);
-            out.push({ type: "agent", name: e.replace(/\.md$/, ""), group: plugin, file: f, description: desc(f) });
-          }
+        for (const plugin of dirNames(proot)) {
+          out = out.concat(collectSkills(path.join(proot, plugin, "skills"), plugin));
+          out = out.concat(collectAgents(path.join(proot, plugin, "agents"), plugin));
         }
       } else {
         throw new Error("unknown layout: " + layout);
       }
-      return out;
+      // dedup by name (first wins)
+      const seen = new Set();
+      return out.filter(x => (seen.has(x.name) ? false : seen.add(x.name)));
     }
 
     module.exports = { scanSource };
-    if (require.main === module) console.log(JSON.stringify(scanSource(process.argv[2], process.argv[3], {}), null, 2));
+    if (require.main === module) {
+      const extra = process.argv[4] ? JSON.parse(process.argv[4]) : {};
+      console.log(JSON.stringify(scanSource(process.argv[2], process.argv[3], extra), null, 2));
+    }
 
 - [ ] Step 4: run `node test/smoke.js` -> new assertions pass.
 - [ ] Step 5: commit `feat: scan-source enumerates skills/agents per layout` (git add lib/scan-source.js test/smoke.js).

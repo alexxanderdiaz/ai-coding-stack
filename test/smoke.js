@@ -239,6 +239,7 @@ try {
   fs.existsSync(path.join(sproj, ".agent", "workflows", "rev.md")) ? ok("source: antigravity workflow written") : bad("antigravity workflow missing");
   const man = JSON.parse(fs.readFileSync(path.join(sproj, ".aics-experts.json"), "utf8"));
   (man.experts && man.experts.length === 1 && man.experts[0].id === "rev" && man.experts[0].source === "fix" && man.experts[0].ref === "abc123" && Array.isArray(man.experts[0].tools)) ? ok("manifest written") : bad("manifest wrong");
+  !path.isAbsolute(man.experts[0].sourcePath) ? ok("manifest sourcePath is relative") : bad("manifest sourcePath absolute (home leak)");
   fs.mkdirSync(path.join(stmp, "skills", "helper"), { recursive: true });
   fs.writeFileSync(path.join(stmp, "skills", "helper", "SKILL.md"), "---\nname: helper\nkind: skill\ndescription: H\n---\nb");
   fs.writeFileSync(path.join(stmp, "skills", "helper", "extra.txt"), "data");
@@ -253,6 +254,8 @@ try {
     try { execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", path.join(stmp, "skills"), "--layout", "skills-dir", "--ref", "abc123", "--pick", "evilskill", "--yes"], { stdio: "ignore" }); } catch { blocked = true; }
     (blocked || !fs.existsSync(path.join(sproj, ".claude", "skills", "evilskill", "leak"))) ? ok("source: skill with symlink rejected") : bad("symlink copied into project");
   } else { ok("source: symlink rejection (skipped: no symlink perm)"); }
+  let badId = false; try { execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "bad/id", "--source-path", stmp, "--layout", "agents-dir", "--ref", "r", "--pick", "rev", "--yes"], { stdio: "ignore" }); } catch { badId = true; }
+  badId ? ok("rejects invalid source-id") : bad("invalid source-id not rejected");
 } catch (e) { bad("install-experts source threw: " + e.message); }
 fs.rmSync(stmp, { recursive: true, force: true }); fs.rmSync(sproj, { recursive: true, force: true });
 

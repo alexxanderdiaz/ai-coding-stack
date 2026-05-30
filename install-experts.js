@@ -110,6 +110,7 @@ function installFromSource(projectDir, tools) {
   const layout = flagVal("--layout");
   const ref = flagVal("--ref") || "unknown";
   const picks = (flagVal("--pick") || "").split(",").map(s=>s.trim()).filter(Boolean);
+  if (!sourceId || !VALID.test(sourceId)) { console.error("install-experts: --source-id must match [A-Za-z0-9_-]+"); process.exit(1); }
   if (!sourcePath || !layout) { console.error("install-experts: --source-id needs --source-path and --layout"); process.exit(1); }
   if (!picks.length) { console.log("No picks. Pass --pick name1,name2"); return; }
   const avail = scanSource(sourcePath, layout, {});
@@ -145,7 +146,7 @@ function installFromSource(projectDir, tools) {
       }
     }
     if (!PREVIEW && installedTools.length) {
-      upsertManifest(man, { id:name, type:item.type, source:sourceId, sourcePath:item.dir||item.file, ref, installedAt:new Date().toISOString(), tools:installedTools, layout });
+      upsertManifest(man, { id:name, type:item.type, source:sourceId, sourcePath:path.relative(sourcePath, item.dir||item.file), ref, installedAt:new Date().toISOString(), tools:installedTools, layout });
     }
   }
   if (!PREVIEW) writeManifest(projectDir, man);
@@ -187,7 +188,7 @@ function main() {
   if (!tools.length || tools.includes("all")) tools = ALL_TOOLS;
   tools = [...new Set(tools)].filter(t => ALL_TOOLS.includes(t));
   if (ARGV.includes("--generate")) return doGenerate(projectDir, tools);
-  if (ARGV.includes("--update")) return doUpdate(projectDir, flagList("--tools").filter(t => ALL_TOOLS.includes(t)));
+  if (ARGV.includes("--update")) { const ut = ARGV.includes("--tools") ? tools : []; return doUpdate(projectDir, ut); }
   if (ARGV.includes("--source-id")) return installFromSource(projectDir, tools);
   const ids = flagList("--experts");
   const catalog = require(path.join(CATALOG_DIR, "catalog.json"));

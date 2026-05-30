@@ -66,5 +66,13 @@ try {
   !out.includes("== antigravity ==") ? ok("excludes antigravity") : bad("antigravity wrongly included");
 } catch (e) { bad("ensure-tools list threw: " + e.message); }
 
+// 6. setup.js --tools <list> forwards the selection to ensure-tools
+console.log("\nsetup selection:");
+try {
+  const out = execFileSync("node", [path.join(ROOT, "setup.js"), "--tools", "claude", "--check-tools"], { encoding: "utf8" });
+  out.includes("== claude ==") ? ok("setup forwards claude") : bad("setup did not forward claude");
+  !out.includes("== antigravity ==") ? ok("setup limits to selection") : bad("setup forwarded extra tools");
+} catch (e) { bad("setup --tools threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -1,4 +1,8 @@
 # ai-coding-stack — bootstrap (ensures Node) then runs the setup menu.
+# Usage: .\setup.ps1                      # interactive menu
+#        .\setup.ps1 -Tools claude,codex  # install a subset
+#        .\setup.ps1 --all                # tools + scaffold
+param([string]$Tools)
 $ErrorActionPreference = "Stop"
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 function Have($c){ [bool](Get-Command $c -ErrorAction SilentlyContinue) }
@@ -7,4 +11,6 @@ if (-not (Have "node")) {
   $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
 }
 if (-not (Have "node")) { Write-Host "Node.js required. Reopen PowerShell and re-run." -ForegroundColor Red; exit 1 }
-node "$Here\setup.js" $args
+$forward = @($args)
+if ($Tools) { $forward = @("--tools", $Tools) + $forward }
+node "$Here\setup.js" @forward

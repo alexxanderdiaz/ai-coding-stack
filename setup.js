@@ -6,7 +6,7 @@
  *
  * Usage:
  *   node setup.js                 # interactive menu
- *   node setup.js --tools         # install/verify Claude Code, Codex, Antigravity
+ *   node setup.js --tools claude,codex   # install/verify a subset (or 'all')
  *   node setup.js --init          # scaffold the current directory (project-init)
  *   node setup.js --all           # tools + scaffold
  *   (pass --about "..." to seed the project goal)
@@ -29,7 +29,8 @@ function parseToolList() {
   const i = ARGV.indexOf("--tools");
   if (i < 0) return "all";
   const v = ARGV[i + 1];
-  return (v && !v.startsWith("--")) ? v : "all";
+  if (!v || v.startsWith("--")) { console.warn('  --tools needs a value (e.g. --tools claude,codex); defaulting to "all".'); return "all"; }
+  return v;
 }
 function numbersToTools(answer) {
   const a = answer.trim();

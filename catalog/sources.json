@@ -25,6 +25,18 @@
       "license": "MIT",
       "tags": ["skills", "tdd", "debugging", "collaboration", "architecture", "workflow"],
       "description": "Community-editable skills for Claude Code's Superpowers plugin: TDD, systematic debugging, brainstorming, planning and collaboration patterns, each as a SKILL.md."
+    },
+    {
+      "id": "sickn33-antigravity-awesome-skills",
+      "repo": "https://github.com/sickn33/antigravity-awesome-skills",
+      "host": "github.com",
+      "layout": "skills-dir",
+      "paths": {
+        "skills": "skills/*"
+      },
+      "license": "MIT",
+      "tags": ["skills", "data-ai", "azure", "rag", "ml", "security", "architecture"],
+      "description": "Very large (~1.5k) multi-tool SKILL.md library. Quality is uneven and broad, so discover/cherry-pick by tag — strongest for the data-ai / azure-ai SDK / RAG / ML families; do not bulk-install."
     }
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "experts": [
+    { "id": "code-reviewer", "kind": "agent", "profiles": ["*"], "languages": [], "frameworks": [],
+      "keywords": ["review", "quality", "security", "audit"],
+      "description": "Reviews changes for bugs, security, and maintainability.",
+      "spec": "specs/code-reviewer.md", "source": { "type": "bundled" } },
+    { "id": "frontend-pro", "kind": "skill", "profiles": ["frontend"], "languages": [], "frameworks": ["React", "Next.js", "Vue"],
+      "keywords": ["frontend", "ui", "component", "css", "accessibility"],
+      "description": "Frontend patterns: components, state, accessibility, performance.",
+      "spec": "specs/frontend-pro.md", "source": { "type": "bundled" } },
+    { "id": "api-backend-pro", "kind": "skill", "profiles": ["backend"], "languages": ["Go"], "frameworks": ["Node backend", "Django", "Flask", "FastAPI"],
+      "keywords": ["api", "backend", "endpoint", "rest", "server", "database"],
+      "description": "Backend/API patterns: validation, error handling, persistence, auth.",
+      "spec": "specs/api-backend-pro.md", "source": { "type": "bundled" } },
+    { "id": "python-pro", "kind": "skill", "profiles": ["python"], "languages": ["Python"], "frameworks": [],
+      "keywords": ["python", "pytest", "typing", "packaging"],
+      "description": "Idiomatic Python: typing, structure, pytest, packaging.",
+      "spec": "specs/python-pro.md", "source": { "type": "bundled" } },
+    { "id": "ml-data-pro", "kind": "skill", "profiles": ["data"], "languages": [], "frameworks": ["ML/Data"],
+      "keywords": ["ml", "data", "training", "model", "pandas", "notebook"],
+      "description": "ML/Data workflows: reproducibility, data hygiene, evaluation.",
+      "spec": "specs/ml-data-pro.md", "source": { "type": "bundled" } },
+    { "id": "devops-infra-pro", "kind": "skill", "profiles": ["devops"], "languages": [], "frameworks": ["Docker", "Terraform", "GitHub Actions"],
+      "keywords": ["devops", "infra", "ci", "deploy", "docker", "terraform", "pipeline"],
+      "description": "Infra/DevOps: containerization, IaC, CI/CD, least-privilege.",
+      "spec": "specs/devops-infra-pro.md", "source": { "type": "bundled" } }
+  ]
+}

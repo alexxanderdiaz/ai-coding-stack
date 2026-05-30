@@ -74,5 +74,18 @@ try {
   !out.includes("== antigravity ==") ? ok("setup limits to selection") : bad("setup forwarded extra tools");
 } catch (e) { bad("setup --tools threw: " + e.message); }
 
+// 4b. catalog integrity: parses, ids unique, spec files exist, kinds valid
+console.log("\ncatalog:");
+try {
+  const catalog = require(path.join(ROOT, "catalog", "catalog.json"));
+  Array.isArray(catalog.experts) && catalog.experts.length > 0 ? ok("catalog has experts") : bad("catalog empty");
+  const ids = catalog.experts.map(e => e.id);
+  new Set(ids).size === ids.length ? ok("ids unique") : bad("duplicate ids");
+  const kindsOk = catalog.experts.every(e => e.kind === "agent" || e.kind === "skill");
+  kindsOk ? ok("kinds valid") : bad("invalid kind in catalog");
+  const specsOk = catalog.experts.every(e => fs.existsSync(path.join(ROOT, "catalog", e.spec)));
+  specsOk ? ok("all spec files exist") : bad("missing spec file");
+} catch (e) { bad("catalog threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

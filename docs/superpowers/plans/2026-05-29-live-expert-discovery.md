@@ -58,19 +58,20 @@ Install model per pick:
   - `hesreallyhim/awesome-claude-code` (index; if it is a list not installable skills, omit or mark layout `skills-dir` only if it has a skills/ dir)
   - the `everything-claude-code` marketplace repo (resolve its real owner via `gh search repos everything-claude-code`; layout `claude-plugin-marketplace`, paths `{ "skills": "plugins/*/skills", "agents": "plugins/*/agents" }`)
   - `obra/superpowers` or the superpowers marketplace repo (resolve real owner via `gh search repos superpowers claude`; layout `claude-plugin-marketplace`)
-  Schema (every entry): `id`, `repo` (https URL), `host` ("github.com"), `layout`, `paths`, `tags` (array of domains), `description`. Example verified entry:
+  **License check:** for each candidate also run `gh repo view <owner>/<repo> --json licenseInfo` (or check the repo). Only include **permissive** licenses (MIT/Apache-2.0/BSD/ISC). SKIP repos with no license or copyleft. Record it in the entry as `"license"`.
+  Schema (every entry): `id`, `repo` (https URL), `host` ("github.com"), `layout`, `paths`, `tags` (array of domains), `license`, `description`. Example verified entry:
 
     {
       "version": 1,
       "sources": [
         { "id": "wshobson-agents", "repo": "https://github.com/wshobson/agents", "host": "github.com",
-          "layout": "agents-dir", "paths": { "agents": "." },
+          "layout": "agents-dir", "paths": { "agents": "." }, "license": "MIT",
           "tags": ["agents","backend","frontend","data","devops","review"],
           "description": "Large curated Claude subagent collection." }
       ]
     }
 
-  Add the other verified sources as further array entries.
+  Add the other verified sources as further array entries. Update the Step-1 test to also assert every source has a non-empty `license` (append: `s.sources.every(x => x.license) ? ok("licenses recorded") : bad("missing license")`).
 - [ ] Step 4: `node -e "require('./catalog/sources.json'); console.log('sources ok')"` -> `sources ok`. Run `node test/smoke.js` -> 5 new assertions pass.
 - [ ] Step 5: commit `feat: add trusted-source allowlist (sources.json)` (git add catalog/sources.json test/smoke.js).
 
@@ -405,6 +406,7 @@ Install model per pick:
           const targetTools = tools && tools.length ? tools : null;
           console.log(`install-experts --update${PREVIEW ? " (preview; --yes to write)" : ""}`);
           for (const rec of man.experts) {
+            if (rec.source === "generated") { console.log(`  = ${rec.id} (generated; nothing to fetch)`); continue; }
             if (!resolved[rec.source]) {
               if (overrides[rec.source]) { resolved[rec.source] = { path: overrides[rec.source], ref: overrides[rec.source + ".ref"] || "updated" }; }
               else { const entry = sources.find(s => s.id === rec.source); if (!entry) { console.log(`  ! source not in allowlist: ${rec.source} (skip ${rec.id})`); continue; } resolved[rec.source] = fetchSource(entry); }
@@ -442,6 +444,70 @@ Install model per pick:
 
 ---
 
+## Task 5c: install-experts.js --generate (generation fallback / layer 3)
+
+**Files:** Modify `install-experts.js` (heredoc); Test `test/smoke.js`.
+
+- [ ] Step 1: append failing test before the summary:
+
+    // 16. install-experts --generate writes an agent-authored spec (no network)
+    console.log("\ninstall-experts generate:");
+    const gproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-gen-"));
+    const gspec = path.join(gproj, "_spec.md");
+    try {
+      fs.writeFileSync(gspec, "---\nid: niche-helper\nkind: agent\ndescription: Bespoke niche helper\n---\nDo the niche thing.");
+      // gate
+      execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--tools", "claude", "--generate", "--spec-file", gspec], { stdio: "ignore" });
+      !fs.existsSync(path.join(gproj, ".claude", "agents", "niche-helper.md")) ? ok("generate: no write without --yes") : bad("wrote without --yes");
+      execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--tools", "claude", "--generate", "--spec-file", gspec, "--yes"], { stdio: "ignore" });
+      fs.existsSync(path.join(gproj, ".claude", "agents", "niche-helper.md")) ? ok("generate: agent written") : bad("generated agent missing");
+      const man = JSON.parse(fs.readFileSync(path.join(gproj, ".aics-experts.json"), "utf8"));
+      (man.experts[0].id === "niche-helper" && man.experts[0].source === "generated" && man.experts[0].ref === "local") ? ok("generate: manifest source=generated") : bad("generate manifest wrong");
+      // update skips generated
+      const up = execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--update", "--yes"], { encoding: "utf8" });
+      up.includes("generated") ? ok("update skips generated") : bad("update did not skip generated");
+    } catch (e) { bad("install-experts generate threw: " + e.message); }
+    fs.rmSync(gproj, { recursive: true, force: true });
+
+- [ ] Step 2: run -> FAIL (no --generate).
+- [ ] Step 3: Modify `install-experts.js`: add a generate branch. Full code:
+
+        function doGenerate(projectDir, tools) {
+          const specFile = flagVal("--spec-file");
+          if (!specFile || !fs.existsSync(specFile)) { console.error("install-experts: --generate needs --spec-file <path>"); process.exit(1); }
+          const spec = parseSpec(fs.readFileSync(specFile, "utf8"));
+          const id = spec.meta.id;
+          if (!VALID.test(id || "")) { console.error("generated spec has invalid id: " + JSON.stringify(id)); process.exit(1); }
+          if (spec.meta.kind !== "agent" && spec.meta.kind !== "skill") { console.error("generated spec needs kind agent|skill"); process.exit(1); }
+          const man = readManifest(projectDir);
+          console.log(`install-experts --generate ${id} (${spec.meta.kind}) -> tools: ${tools.join(", ")}${PREVIEW ? " (preview; --yes to write)" : ""}`);
+          if (tools.includes("codex") && !PREVIEW) console.log("  ! codex writes to GLOBAL ~/.codex.");
+          const installedTools = [];
+          for (const tool of tools) {
+            const t = TOOLS[tool]; if (!t) continue;
+            const { subpath, content } = renderExpert(spec, tool);
+            const dest = safeJoin(baseDir(tool, projectDir), subpath);
+            if (PREVIEW) { console.log(`  would write [${tool}] ${subpath}`); continue; }
+            if (fs.existsSync(dest) && !FORCE) { console.log(`  = [${tool}] ${subpath} exists (--force to overwrite)`); continue; }
+            fs.mkdirSync(path.dirname(dest), { recursive: true });
+            fs.writeFileSync(dest, content);
+            installedTools.push(tool); console.log(`  + [${tool}] ${subpath}`);
+          }
+          if (!PREVIEW && installedTools.length) {
+            upsertManifest(man, { id, type: spec.meta.kind, source: "generated", sourcePath: "(authored)", ref: "local", installedAt: new Date().toISOString(), tools: installedTools, layout: "generated" });
+            writeManifest(projectDir, man);
+          }
+          if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
+        }
+
+  - In `main()`: add `if (ARGV.includes("--generate")) return doGenerate(projectDir, tools);` BEFORE the `--update` / `--source-id` / bundled branches (so `--generate` takes precedence). `tools` is already resolved (detected/`--tools`).
+  - Generated experts are agents or single-file skills authored as one spec → both go through `renderExpert` (skills render to `skills/<id>/SKILL.md`). No dir-copy needed (nothing to copy; it is authored text).
+
+- [ ] Step 4: run `node test/smoke.js` -> generate assertions pass; all prior pass.
+- [ ] Step 5: commit `feat: install-experts --generate (layer-3 authored skills/agents)` (git add install-experts.js test/smoke.js).
+
+---
+
 ## Task 6: SKILL wiring + staleness hint
 
 **Files:** Modify `skills/project-init/SKILL.md`; Modify `project-init.js`.
@@ -469,17 +535,23 @@ Install model per pick:
   Expected: output includes `1 expert(s) installed from fix (since 2026-05-01)`.
 - [ ] Step 3: `skills/project-init/SKILL.md` — replace step 5 (the discovery step) with the live flow. Keep frontmatter `allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*)` and ADD `Bash(git:*)` (needed for fetch) and `Bash(gh:*)` (optional stars). New step 5:
 
-        5. **Discover experts (live, approval-gated):** bring in best-fit community skills/agents for the project's role/stack.
-           - Trusted sources are in `<repo>/catalog/sources.json` (allowlist). Pick the sources whose `tags` fit the role/`--about`.
-           - For each, fetch (cached, pinned): `node "<repo>/lib/fetch-source.js" <sourceId>` → prints `{path, ref}`.
-           - List what's inside: `node "<repo>/lib/scan-source.js" <path> <layout>`.
-           - **Choose only the skills/agents relevant to THIS project** (match name/description/tags to the role/stack). Optionally check popularity with `gh repo view`.
-           - Detect installed tools: `node "<repo>/ensure-tools.js" all --check`.
-           - Preview (writes nothing): `node "<repo>/install-experts.js" . --tools <detected> --source-id <id> --source-path <path> --layout <layout> --ref <ref> --pick <names> --dry-run`.
-           - Show the proposal (items + source + ref) and get explicit approval; then re-run with `--yes`. Installer refuses to write without `--yes`.
-           - Codex installs to GLOBAL `~/.codex` — say so before `--yes`.
-           - **Never run anything from a fetched source**; only its `SKILL.md`/agent `.md` are used. Offline / source unreachable → fall back to the bundled catalog (`--experts`).
-           - Refresh later: `node "<repo>/install-experts.js" . --update --dry-run` then `--yes`.
+        5. **Discover experts (approval-gated) — three layers, quality-first:**
+           Detect installed tools first: `node "<repo>/ensure-tools.js" all --check`.
+
+           **Layer 1 — bundled catalog (offline, instant):** for common roles, install vetted experts: `node "<repo>/install-experts.js" . --tools <detected> --experts <ids> --dry-run` then `--yes`.
+
+           **Layer 2 — live trusted sources (preferred for known needs):**
+           - Trusted sources are in `<repo>/catalog/sources.json` (allowlist, each with a `license`). Pick the sources whose `tags` fit the role/`--about`.
+           - Fetch (cached, pinned): `node "<repo>/lib/fetch-source.js" <sourceId>` → prints `{path, ref}`.
+           - List inside: `node "<repo>/lib/scan-source.js" <path> <layout>`.
+           - **Choose only what's relevant to THIS project.** Optionally rank by `gh repo view`.
+           - Preview: `node "<repo>/install-experts.js" . --tools <detected> --source-id <id> --source-path <path> --layout <layout> --ref <ref> --pick <names> --dry-run` → show proposal (items + source + ref) → approve → re-run with `--yes`.
+           - **Never run anything from a fetched source**; only `SKILL.md`/agent `.md` text is used.
+
+           **Layer 3 — generate (only for gaps):** if neither layer covers a niche need, AUTHOR a canonical spec (frontmatter `id`/`kind`/`description` + body) to a temp file and: `node "<repo>/install-experts.js" . --tools <detected> --generate --spec-file <tmp> --dry-run` → approve → `--yes`. Prefer real community skills over generated ones; generate last.
+
+           - Codex installs to GLOBAL `~/.codex` — say so before `--yes`. Offline/source unreachable → use Layer 1.
+           - Refresh later: `node "<repo>/install-experts.js" . --update --dry-run` then `--yes` (generated entries are skipped).
 
 - [ ] Step 4: `node test/smoke.js` -> all pass (SKILL is text; the bundled `skills/project-init/project-init.js` unchanged still parses). `node -c project-init.js` parses.
 - [ ] Step 5: commit `feat: SKILL live-discovery flow + project-init staleness hint` (git add skills/project-init/SKILL.md project-init.js test/smoke.js).
@@ -503,9 +575,16 @@ Install model per pick:
           --source-path <path> --layout agents-dir --ref <ref> --pick code-reviewer --dry-run
         node install-experts.js . --update --dry-run        # refresh installed experts
         ```
-        - Sources are an **allowlist** (host-checked, `--depth 1`, SHA-pinned, symlinks rejected, **never executed**).
+        - Sources are an **allowlist** (host-checked, `--depth 1`, SHA-pinned, symlinks rejected, **never executed**; permissive license only).
         - Installs are recorded in `.aics-experts.json` (provenance); `--update` re-fetches latest with a preview and `--yes` gate.
         - Fresh at install; nothing auto-updates silently.
+
+        **Three layers (quality-first):** 1) bundled catalog (offline) → 2) live trusted sources (above) → 3) **generate** a bespoke skill/agent only for gaps:
+        ```bash
+        # agent authors a spec to /tmp/spec.md, then:
+        node install-experts.js . --tools claude,codex --generate --spec-file /tmp/spec.md --dry-run
+        ```
+        Generated experts are recorded as `source: "generated"` and skipped by `--update`.
 
 - [ ] Step 2: README — add to the Components table:
 
@@ -515,11 +594,12 @@ Install model per pick:
 
 - [ ] Step 3: CHANGELOG — under `## [Unreleased]` → `### Added`, append:
 
-        - Live expert discovery: `catalog/sources.json` allowlist + `lib/fetch-source.js`
-          (pinned clone, host allowlist, symlink reject) + `lib/scan-source.js`; install from
-          fetched sources with a `.aics-experts.json` provenance manifest and `install-experts.js --update`
-          (preview + `--yes`). Agent-driven selection via the project-init skill; bundled catalog
-          remains the offline fallback.
+        - Live expert discovery (3 layers, quality-first): `catalog/sources.json` allowlist
+          (permissive-license, host-checked) + `lib/fetch-source.js` (pinned clone, symlink reject)
+          + `lib/scan-source.js`; install from fetched sources with a `.aics-experts.json` provenance
+          manifest and `install-experts.js --update` (preview + `--yes`). `--generate` authors a
+          bespoke skill/agent for niche gaps (`source:"generated"`, skipped by `--update`).
+          Agent-driven selection via the project-init skill; bundled catalog = offline fallback.
 
 - [ ] Step 4: `node test/smoke.js` -> all pass. Commit `docs: live expert discovery` (git add README.md CHANGELOG.md).
 
@@ -527,6 +607,6 @@ Install model per pick:
 
 ## Self-Review
 
-- **Spec coverage:** sources.json → T1; fetch (allowlist/pin/symlink) → T2; scan → T3; install-from-source + manifest + per-tool render + detected-tools + `--yes` → T4; update + staleness → T5/T6; SKILL agent-driven flow → T6; offline fallback preserved (bundled path untouched) → T4 note; docs → T7. No gaps.
+- **Spec coverage:** sources.json + license → T1; fetch (allowlist/pin/symlink) → T2; scan → T3; install-from-source + manifest + per-tool render + detected-tools + `--yes` → T4; update + staleness → T5/T6; generation fallback (layer 3) → T5c; SKILL agent-driven 3-layer flow → T6; offline fallback preserved (bundled path untouched) → T4 note; docs → T7. No gaps.
 - **Placeholder scan:** all code steps complete. T1 uses `gh repo view` to verify real URLs (a real command, not a placeholder); one verified example entry (`wshobson/agents`) is concrete. No TBD.
 - **Type consistency:** `scanSource(root,layout,paths)` → `{type,name,dir?,file,description,group?}` used in T4/T5. `fetchSource(entry,cacheDir)` → `{path,ref}` used in T5. `renderExpert(spec,tool)`→`{subpath,content}`, `TOOLS`, `baseDir`, `safeJoin`, `PREVIEW`/`DRY` reused from the merged install-experts.js. Manifest record shape `{id,type,source,sourcePath,ref,installedAt,tools,layout}` consistent across T4 (write) and T5 (read/update) and T6 (hint reads id/source/installedAt). `flagVal`/`flagList` distinct (single vs list).

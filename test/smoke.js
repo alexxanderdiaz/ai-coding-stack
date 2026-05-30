@@ -274,5 +274,22 @@ try {
 } catch (e) { bad("install-experts update threw: " + e.message); }
 fs.rmSync(utmp, { recursive: true, force: true }); fs.rmSync(uproj, { recursive: true, force: true });
 
+// 16. install-experts --generate writes an agent-authored spec (no network)
+console.log("\ninstall-experts generate:");
+const gproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-gen-"));
+const gspec = path.join(gproj, "_spec.md");
+try {
+  fs.writeFileSync(gspec, "---\nid: niche-helper\nkind: agent\ndescription: Bespoke niche helper\n---\nDo the niche thing.");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--tools", "claude", "--generate", "--spec-file", gspec], { stdio: "ignore" });
+  !fs.existsSync(path.join(gproj, ".claude", "agents", "niche-helper.md")) ? ok("generate: no write without --yes") : bad("wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--tools", "claude", "--generate", "--spec-file", gspec, "--yes"], { stdio: "ignore" });
+  fs.existsSync(path.join(gproj, ".claude", "agents", "niche-helper.md")) ? ok("generate: agent written") : bad("generated agent missing");
+  const man = JSON.parse(fs.readFileSync(path.join(gproj, ".aics-experts.json"), "utf8"));
+  (man.experts[0].id === "niche-helper" && man.experts[0].source === "generated" && man.experts[0].ref === "local") ? ok("generate: manifest source=generated") : bad("generate manifest wrong");
+  const up = execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--update", "--yes"], { encoding: "utf8" });
+  up.includes("generated") ? ok("update skips generated") : bad("update did not skip generated");
+} catch (e) { bad("install-experts generate threw: " + e.message); }
+fs.rmSync(gproj, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

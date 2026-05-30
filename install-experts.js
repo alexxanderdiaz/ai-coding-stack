@@ -152,12 +152,41 @@ function installFromSource(projectDir, tools) {
   if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
 }
 
+function doGenerate(projectDir, tools) {
+  const specFile = flagVal("--spec-file");
+  if (!specFile || !fs.existsSync(specFile)) { console.error("install-experts: --generate needs --spec-file <path>"); process.exit(1); }
+  const spec = parseSpec(fs.readFileSync(specFile, "utf8"));
+  const id = spec.meta.id;
+  if (!VALID.test(id || "")) { console.error("generated spec has invalid id: " + JSON.stringify(id)); process.exit(1); }
+  if (spec.meta.kind !== "agent" && spec.meta.kind !== "skill") { console.error("generated spec needs kind agent|skill"); process.exit(1); }
+  const man = readManifest(projectDir);
+  console.log(`install-experts --generate ${id} (${spec.meta.kind}) -> tools: ${tools.join(", ")}${PREVIEW ? " (preview; --yes to write)" : ""}`);
+  if (tools.includes("codex") && !PREVIEW) console.log("  ! codex writes to GLOBAL ~/.codex.");
+  const installedTools = [];
+  for (const tool of tools) {
+    const t = TOOLS[tool]; if (!t) continue;
+    const { subpath, content } = renderExpert(spec, tool);
+    const dest = safeJoin(baseDir(tool, projectDir), subpath);
+    if (PREVIEW) { console.log(`  would write [${tool}] ${subpath}`); continue; }
+    if (fs.existsSync(dest) && !FORCE) { console.log(`  = [${tool}] ${subpath} exists (--force to overwrite)`); continue; }
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, content);
+    installedTools.push(tool); console.log(`  + [${tool}] ${subpath}`);
+  }
+  if (!PREVIEW && installedTools.length) {
+    upsertManifest(man, { id, type: spec.meta.kind, source: "generated", sourcePath: "(authored)", ref: "local", installedAt: new Date().toISOString(), tools: installedTools, layout: "generated" });
+    writeManifest(projectDir, man);
+  }
+  if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
+}
+
 function main() {
   const projectDir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--tools" && ARGV[i - 1] !== "--experts") || process.cwd());
   if (!fs.existsSync(projectDir)) { console.error(`install-experts: directory not found: ${projectDir}`); process.exit(1); }
   let tools = flagList("--tools");
   if (!tools.length || tools.includes("all")) tools = ALL_TOOLS;
   tools = [...new Set(tools)].filter(t => ALL_TOOLS.includes(t));
+  if (ARGV.includes("--generate")) return doGenerate(projectDir, tools);
   if (ARGV.includes("--update")) return doUpdate(projectDir, flagList("--tools").filter(t => ALL_TOOLS.includes(t)));
   if (ARGV.includes("--source-id")) return installFromSource(projectDir, tools);
   const ids = flagList("--experts");

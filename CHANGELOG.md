@@ -18,6 +18,11 @@ follows [Semantic Versioning](https://semver.org/).
   manifest and `install-experts.js --update` (preview + `--yes`). `--generate` authors a
   bespoke skill/agent for niche gaps (`source:"generated"`, skipped by `--update`).
   Agent-driven selection via the project-init skill; bundled catalog = offline fallback.
+- Trusted discovery source `sickn33-antigravity-awesome-skills` (1.5k+ SKILL.md library,
+  tag-scoped to data-ai/azure/rag/ml/security/architecture; quality uneven, cherry-pick
+  recommended).
+- Optional Context7 docs MCP (bring-your-own-key, never stored in repo; provides
+  version-accurate library docs for Next.js, React, Tailwind, etc.).
 
 ## [0.1.1] - 2026-05-29
 ### Added

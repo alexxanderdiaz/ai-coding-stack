@@ -58,7 +58,12 @@ node install-experts.js . --tools claude,codex --experts code-reviewer,api-backe
 node install-experts.js . --tools claude,codex --experts code-reviewer,api-backend-pro --yes
 ```
 
-### Layer 2 — live trusted source
+### Layer 2 — live trusted sources (3 available)
+**Trusted sources** (curated, permissive-licensed, safely scanned):
+1. `wshobson-agents` — 83 plugins (backend, frontend, data, DevOps, security, code review)
+2. `obra-superpowers-skills` — community skills (TDD, debugging, collaboration, architecture)
+3. `sickn33-antigravity-awesome-skills` — 1.5k+ SKILL.md library (data-ai, azure, RAG, ML; cherry-pick by tag)
+
 ```bash
 node lib/fetch-source.js wshobson-agents                       # clone (pinned) → prints {path, ref}
 node lib/scan-source.js <path> claude-plugin-marketplace       # list installable skills/agents

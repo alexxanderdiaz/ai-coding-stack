@@ -98,7 +98,10 @@ flowchart TD
 
 ### Layer 2 — live trusted sources
 
-- `catalog/sources.json` is an **allowlist** of popular collections — each entry pins a `host`, `layout`, `paths`, and a permissive `license`.
+- `catalog/sources.json` is an **allowlist** of 3 popular collections — each entry pins a `host`, `layout`, `paths`, and a permissive `license`:
+  1. **wshobson-agents** (83 plugins: backend, frontend, data, DevOps, security, code review)
+  2. **obra-superpowers-skills** (community skills: TDD, debugging, collaboration, architecture, workflow)
+  3. **sickn33-antigravity-awesome-skills** (1.5k+ multi-tool SKILL.md library, best for data-ai/azure/RAG/ML; quality uneven — cherry-pick by tag)
 - `lib/fetch-source.js` clones a source (`git clone --depth 1`), **pins the SHA**, enforces the host allowlist (exact HTTPS hostname, no port), **rejects symlinks**, and **never executes** repo contents. Returns `{ path, ref }`.
 - `lib/scan-source.js` enumerates installable skills/agents in the fetched tree (glob/recursive-aware; layouts `skills-dir`, `agents-dir`, `claude-plugin-marketplace`).
 - Install with `--source-id` / `--source-path` / `--layout` / `--ref` / `--pick <names>`. Only `SKILL.md` / agent `.md` text is used.

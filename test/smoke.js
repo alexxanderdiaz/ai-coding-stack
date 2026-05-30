@@ -57,5 +57,104 @@ console.log("\nensure-tools:");
 try { execFileSync("node", [path.join(ROOT, "ensure-tools.js"), "all", "--check"], { stdio: "ignore" }); ok("ensure-tools --check runs"); }
 catch { bad("ensure-tools --check failed"); }
 
+// 5. ensure-tools accepts a comma list (CHECK only, no install)
+console.log("\nensure-tools selection:");
+try {
+  const out = execFileSync("node", [path.join(ROOT, "ensure-tools.js"), "claude,codex", "--check"], { encoding: "utf8" });
+  out.includes("== claude ==") ? ok("selects claude") : bad("claude not selected");
+  out.includes("== codex ==") ? ok("selects codex") : bad("codex not selected");
+  !out.includes("== antigravity ==") ? ok("excludes antigravity") : bad("antigravity wrongly included");
+} catch (e) { bad("ensure-tools list threw: " + e.message); }
+
+// 6. setup.js --tools <list> forwards the selection to ensure-tools
+console.log("\nsetup selection:");
+try {
+  const out = execFileSync("node", [path.join(ROOT, "setup.js"), "--tools", "claude", "--check-tools"], { encoding: "utf8" });
+  out.includes("== claude ==") ? ok("setup forwards claude") : bad("setup did not forward claude");
+  !out.includes("== antigravity ==") ? ok("setup limits to selection") : bad("setup forwarded extra tools");
+} catch (e) { bad("setup --tools threw: " + e.message); }
+
+// 4b. catalog integrity: parses, ids unique, spec files exist, kinds valid
+console.log("\ncatalog:");
+try {
+  const catalog = require(path.join(ROOT, "catalog", "catalog.json"));
+  Array.isArray(catalog.experts) && catalog.experts.length > 0 ? ok("catalog has experts") : bad("catalog empty");
+  const ids = catalog.experts.map(e => e.id);
+  new Set(ids).size === ids.length ? ok("ids unique") : bad("duplicate ids");
+  const kindsOk = catalog.experts.every(e => e.kind === "agent" || e.kind === "skill");
+  kindsOk ? ok("kinds valid") : bad("invalid kind in catalog");
+  const specsOk = catalog.experts.every(e => fs.existsSync(path.join(ROOT, "catalog", e.spec)));
+  specsOk ? ok("all spec files exist") : bad("missing spec file");
+} catch (e) { bad("catalog threw: " + e.message); }
+
+// 7. match-experts ranks experts by stack + about text
+console.log("\nmatch-experts:");
+try {
+  const catalog = require(path.join(ROOT, "catalog", "catalog.json"));
+  const { matchExperts } = require(path.join(ROOT, "lib", "match-experts.js"));
+  const goDet = { suggestedProfile: "backend", languages: ["Go"], frameworks: [] };
+  const goIds = matchExperts(catalog, goDet, "build a REST api").map(e => e.id);
+  goIds.includes("api-backend-pro") ? ok("Go backend -> api-backend-pro") : bad("missed api-backend-pro");
+  goIds.includes("code-reviewer") ? ok("always includes code-reviewer (*)") : bad("missed code-reviewer");
+  !goIds.includes("frontend-pro") ? ok("excludes frontend-pro for Go") : bad("frontend-pro wrongly matched");
+  const feDet = { suggestedProfile: "frontend", languages: ["TypeScript"], frameworks: ["React"] };
+  matchExperts(catalog, feDet, "").map(e => e.id).includes("frontend-pro") ? ok("React -> frontend-pro") : bad("missed frontend-pro");
+} catch (e) { bad("match-experts threw: " + e.message); }
+
+// 8. render-expert produces per-tool native formats
+console.log("\nrender-expert:");
+try {
+  const { parseSpec, renderExpert } = require(path.join(ROOT, "lib", "render-expert.js"));
+  const spec = parseSpec(fs.readFileSync(path.join(ROOT, "catalog", "specs", "code-reviewer.md"), "utf8"));
+  spec.meta.id === "code-reviewer" && spec.meta.kind === "agent" ? ok("parseSpec reads frontmatter") : bad("parseSpec frontmatter wrong");
+  const cl = renderExpert(spec, "claude");
+  cl.subpath === "agents/code-reviewer.md" && cl.content.startsWith("---") && cl.content.includes("name: code-reviewer") ? ok("claude agent .md") : bad("claude render wrong");
+  const cx = renderExpert(spec, "codex");
+  cx.subpath === "agents/code-reviewer.toml" && cx.content.includes('name = "code-reviewer"') && cx.content.includes('instructions = """') ? ok("codex agent .toml") : bad("codex render wrong");
+  const ag = renderExpert(spec, "antigravity");
+  ag.subpath === "workflows/code-reviewer.md" ? ok("antigravity workflow .md") : bad("antigravity render wrong");
+  const skillSpec = parseSpec(fs.readFileSync(path.join(ROOT, "catalog", "specs", "python-pro.md"), "utf8"));
+  renderExpert(skillSpec, "claude").subpath === "skills/python-pro/SKILL.md" ? ok("skill -> SKILL.md") : bad("skill subpath wrong");
+  try { renderExpert({ meta: { id: "../evil", kind: "agent" }, body: "x" }, "claude"); bad("id traversal not blocked"); }
+  catch { ok("rejects traversal id"); }
+  try { renderExpert({ meta: { id: "ok", kind: "bogus" }, body: "x" }, "claude"); bad("bad kind not rejected"); }
+  catch { ok("rejects bad kind"); }
+  parseSpec("---\r\nid: x\r\nkind: skill\r\n---\r\nbody").meta.id === "x" ? ok("parseSpec handles CRLF") : bad("CRLF parse failed");
+} catch (e) { bad("render-expert threw: " + e.message); }
+try {
+  const specsDir = path.join(ROOT, "catalog", "specs");
+  const bad3 = fs.readdirSync(specsDir).filter(f => fs.readFileSync(path.join(specsDir, f), "utf8").includes("'''"));
+  bad3.length === 0 ? ok("no spec contains triple-quote") : bad("specs with triple-quote: " + bad3.join(","));
+} catch (e) { bad("spec scan threw: " + e.message); }
+
+// 9. install-experts writes rendered experts into a temp project (claude/antigravity local)
+console.log("\ninstall-experts:");
+const itmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-exp-"));
+try {
+  const dry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
+  dry.includes("agents/code-reviewer.md") ? ok("dry-run lists claude agent path") : bad("dry-run path missing");
+  !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("dry-run writes nothing") : bad("dry-run wrote files");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer"], { stdio: "ignore" });
+  !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("no write without --yes") : bad("wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude,antigravity", "--experts", "code-reviewer,python-pro", "--yes"], { stdio: "ignore" });
+  fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("claude agent written") : bad("claude agent missing");
+  fs.existsSync(path.join(itmp, ".agent", "workflows", "code-reviewer.md")) ? ok("antigravity workflow written") : bad("antigravity workflow missing");
+  fs.existsSync(path.join(itmp, ".claude", "skills", "python-pro", "SKILL.md")) ? ok("claude skill written") : bad("claude skill missing");
+  fs.existsSync(path.join(itmp, ".agent", "skills", "python-pro", "SKILL.md")) ? ok("antigravity skill written") : bad("antigravity skill missing");
+} catch (e) { bad("install-experts threw: " + e.message); }
+fs.rmSync(itmp, { recursive: true, force: true });
+
+// 10. project-init --with-experts prints stack-matched suggestions
+console.log("\nproject-init --with-experts:");
+const ptmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-pi-"));
+try {
+  fs.writeFileSync(path.join(ptmp, "go.mod"), "module demo\ngo 1.22\n");
+  const out = execFileSync("node", [path.join(ROOT, "project-init.js"), ptmp, "--about", "rest api", "--with-experts", "--force"], { encoding: "utf8" });
+  out.includes("Suggested experts for this stack:") ? ok("prints suggestions") : bad("no suggestions printed");
+  out.includes("api-backend-pro") ? ok("suggests api-backend-pro for Go") : bad("missed api-backend-pro");
+  out.includes("code-reviewer") ? ok("suggests code-reviewer") : bad("missed code-reviewer");
+} catch (e) { bad("project-init --with-experts threw: " + e.message); }
+fs.rmSync(ptmp, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -79,6 +79,20 @@ ${cmdLines}
   if (stackList.length) console.log(`>> Detected: ${stackList.join(", ")} | commands: ${Object.keys(det.commands).join(",") || "none"}`);
   if (det.isEmpty) console.log(`>> Stack not recognized — describe the project with --about, and consider discovering skills/agents for your stack online.`);
   console.log(`>> Ready for Claude Code + Codex + Antigravity (CLAUDE.md / AGENTS.md / GEMINI.md / STATE.md).`);
+  if (ARGV.includes("--with-experts")) {
+    const ids = (() => {
+      try {
+        const catalog = require(path.join(__dirname, "catalog", "catalog.json"));
+        const { matchExperts } = require(path.join(__dirname, "lib", "match-experts.js"));
+        return matchExperts(catalog, det, ABOUT).map(e => e.id);
+      } catch { return []; }
+    })();
+    if (ids.length) {
+      console.log(`>> Suggested experts for this stack: ${ids.join(", ")}`);
+      console.log(`>> Preview:  node install-experts.js . --tools claude --experts ${ids.join(",")} --dry-run   # edit the tool list`);
+      console.log(`>> Install:  add --yes after reviewing the preview.`);
+    }
+  }
 }
 
 if (require.main === module) main();

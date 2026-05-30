@@ -5,6 +5,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/); this project
 follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Added
+- Tool selection: install any subset of the three tools (`setup.js --tools claude,codex`,
+  menu sub-prompt, `setup.ps1 -Tools`, `ensure-tools.js claude,codex`).
+- Expert discovery: bundled `catalog/` of skills/agents, `lib/match-experts.js`,
+  `lib/render-expert.js`, and `install-experts.js` — render best-fit experts to each
+  tool's native format (Claude `.md`, Codex `.toml`, Antigravity workflow) with
+  `project-init --with-experts` and an approval-gated (`--yes`) skill flow.
 
 ## [0.1.1] - 2026-05-29
 ### Added

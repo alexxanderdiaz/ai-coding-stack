@@ -1,7 +1,7 @@
 ---
 name: project-init
 description: Scaffold the current project for the best AI-coding-agent experience. Use when the user says "project-init", "set up this project", "initialize this project", or opens a new project. Detects the stack, writes AGENTS.md (+ GEMINI.md for Antigravity) with real commands and a STATE.md continuity log; if relevant skills/agents are missing, discovers good ones online (with approval).
-allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*), Bash(gh search:*)
+allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*)
 ---
 
 # project-init
@@ -23,7 +23,14 @@ Configure the current project directory. `AGENTS.md` is the cross-tool context f
 
 4. **Fill the high-value sections** (best practice): the files ship with placeholders for **Structure** and **Non-obvious patterns**. Inspect the repo and fill them — structure high-level; patterns ONLY the counterintuitive (one real example > three paragraphs); pair prohibitions with alternatives. Keep each file <150 lines.
 
-5. **Discovery (optional):** if the stack is unrecognized or relevant skills/agents are missing, search online (`gh search`, marketplaces, web), **propose** the best options, and install only what the user approves. Never install third-party code without approval.
+5. **Discover experts (optional, approval-gated):** set up best-fit skills/agents for this stack.
+   - Get suggested ids: run project-init with `--with-experts`, or `node "<repo>/lib/match-experts.js" . "<about text>"`.
+   - Refine the shortlist against the user's stated purpose (drop irrelevant ones).
+   - Pick target tools from what the user installed: `node "<repo>/ensure-tools.js" all --check`.
+   - **Preview** (writes nothing): `node "<repo>/install-experts.js" . --tools <selected> --experts <ids> --dry-run`.
+   - Show the preview plan and get explicit user approval. Only then re-run with `--yes` to write. The installer refuses to write without `--yes`.
+   - Codex installs to GLOBAL `~/.codex` (affects all projects) — call this out before `--yes`.
+   - Bundled specs are vetted and offline. Never install unvetted third-party content without approval.
 
 6. **Report** the detected stack, commands, and what landed in the files.
 

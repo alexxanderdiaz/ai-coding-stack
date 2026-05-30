@@ -40,6 +40,13 @@ function safeJoin(base, subpath) {
   if (dest !== root && !dest.startsWith(root + path.sep)) throw new Error(`path traversal blocked: ${subpath}`);
   return dest;
 }
+// catalog spec paths are trusted today, but contain them too (future-proof for external catalogs)
+function safeCatalogSpec(spec) {
+  const root = path.resolve(CATALOG_DIR);
+  const dest = path.resolve(root, spec);
+  if (dest !== root && !dest.startsWith(root + path.sep)) throw new Error(`catalog spec escapes CATALOG_DIR: ${spec}`);
+  return dest;
+}
 function main() {
   const projectDir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--tools" && ARGV[i - 1] !== "--experts") || process.cwd());
   if (!fs.existsSync(projectDir)) { console.error(`install-experts: directory not found: ${projectDir}`); process.exit(1); }
@@ -51,12 +58,12 @@ function main() {
   const byId = Object.fromEntries(catalog.experts.map(e => [e.id, e]));
   if (!ids.length) { console.log("No experts selected. Pass --experts id1,id2"); return; }
   console.log(`install-experts -> tools: ${tools.join(", ")} | experts: ${ids.join(", ")}${DRY ? " (dry-run)" : (PREVIEW ? " (preview; pass --yes to write)" : "")}`);
-  if (tools.includes("codex") && !PREVIEW) console.log("  ! codex writes to GLOBAL ~/.codex — affects every project on this machine.");
+  if (tools.includes("codex")) console.log("  ! codex writes to GLOBAL ~/.codex — affects every project on this machine.");
   for (const id of ids) {
     const entry = byId[id];
     if (!entry) { console.log(`  ! unknown expert: ${id}`); continue; }
     if (!entry.source || entry.source.type !== "bundled") { console.log(`  ! ${id}: only bundled specs supported in this version`); continue; }
-    const spec = parseSpec(fs.readFileSync(path.join(CATALOG_DIR, entry.spec), "utf8"));
+    const spec = parseSpec(fs.readFileSync(safeCatalogSpec(entry.spec), "utf8"));
     for (const tool of tools) {
       const { subpath, content } = renderExpert(spec, tool);
       const dest = safeJoin(baseDir(tool, projectDir), subpath);

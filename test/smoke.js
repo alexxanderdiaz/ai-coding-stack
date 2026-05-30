@@ -156,5 +156,143 @@ try {
 } catch (e) { bad("project-init --with-experts threw: " + e.message); }
 fs.rmSync(ptmp, { recursive: true, force: true });
 
+// 11. sources allowlist integrity
+console.log("\nsources:");
+try {
+  const s = require(path.join(ROOT, "catalog", "sources.json"));
+  const ALLOW = new Set(["github.com"]);
+  (Array.isArray(s.sources) && s.sources.length) ? ok("has sources") : bad("no sources");
+  const ids = s.sources.map(x => x.id);
+  new Set(ids).size === ids.length ? ok("source ids unique") : bad("dup source ids");
+  s.sources.every(x => ALLOW.has(x.host)) ? ok("hosts allowlisted") : bad("host not allowlisted");
+  s.sources.every(x => { try { return new URL(x.repo).hostname === x.host; } catch { return false; } }) ? ok("repo host matches") : bad("repo/host mismatch");
+  s.sources.every(x => ["skills-dir","agents-dir","claude-plugin-marketplace"].includes(x.layout)) ? ok("layouts valid") : bad("bad layout");
+  s.sources.every(x => x.license) ? ok("licenses recorded") : bad("missing license");
+} catch (e) { bad("sources threw: " + e.message); }
+
+// 12. fetch-source guards (host allowlist + symlink rejection) — no network
+console.log("\nfetch-source:");
+try {
+  const { isAllowedHost, rejectSymlinks } = require(path.join(ROOT, "lib", "fetch-source.js"));
+  isAllowedHost("https://github.com/a/b", "github.com") ? ok("allows github.com") : bad("github rejected");
+  !isAllowedHost("https://github.com.evil.com/a/b", "github.com") ? ok("rejects look-alike host") : bad("look-alike allowed");
+  !isAllowedHost("https://gitlab.com/a/b", "gitlab.com") ? ok("rejects non-allowlisted host") : bad("non-allowlisted allowed");
+  !isAllowedHost("/local/path", "github.com") ? ok("rejects non-URL") : bad("non-URL allowed");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "aics-sym-"));
+  fs.mkdirSync(path.join(d, "sub")); fs.writeFileSync(path.join(d, "sub", "ok.txt"), "x");
+  rejectSymlinks(d); ok("clean tree passes rejectSymlinks");
+  let made = true; try { fs.symlinkSync("/etc/passwd", path.join(d, "evil")); } catch { made = false; }
+  if (made) { let threw = false; try { rejectSymlinks(d); } catch { threw = true; } threw ? ok("symlink rejected") : bad("symlink not rejected"); }
+  else { ok("symlink rejected (skipped: no symlink perm)"); }
+  fs.rmSync(d, { recursive: true, force: true });
+  isAllowedHost("https://github.com:22/a/b", "github.com") === false ? ok("rejects explicit port") : bad("port not rejected");
+  isAllowedHost("http://github.com/a/b", "github.com") === false ? ok("rejects http (https only)") : bad("http allowed");
+  let trav = false; try { require(path.join(ROOT, "lib", "fetch-source.js")).fetchSource({ id: "../evil", repo: "https://github.com/a/b", host: "github.com" }, fs.mkdtempSync(path.join(os.tmpdir(), "aics-fc-"))); } catch { trav = true; }
+  trav ? ok("fetchSource rejects traversal id") : bad("traversal id not rejected");
+} catch (e) { bad("fetch-source threw: " + e.message); }
+
+// 13. scan-source enumerates skills/agents per layout (fixtures, no network)
+console.log("\nscan-source:");
+try {
+  const { scanSource } = require(path.join(ROOT, "lib", "scan-source.js"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "aics-scan-"));
+  // skills-dir (one level)
+  const sd = path.join(root, "sd"); fs.mkdirSync(path.join(sd, "alpha"), { recursive: true });
+  fs.writeFileSync(path.join(sd, "alpha", "SKILL.md"), "---\nname: alpha\ndescription: A skill\n---\nbody");
+  const sdRes = scanSource(sd, "skills-dir", { skills: "." });
+  (sdRes.length === 1 && sdRes[0].type === "skill" && sdRes[0].name === "alpha" && sdRes[0].description === "A skill") ? ok("skills-dir scan") : bad("skills-dir wrong");
+  // nested skills (skills/<cat>/<skill>/SKILL.md) + mixed depth, glob path "skills/*/*"
+  const nd = path.join(root, "nd"); fs.mkdirSync(path.join(nd, "skills", "cat", "beta"), { recursive: true });
+  fs.writeFileSync(path.join(nd, "skills", "cat", "beta", "SKILL.md"), "---\nname: beta\ndescription: Nested\n---\nb");
+  fs.mkdirSync(path.join(nd, "skills", "using-skills"), { recursive: true });
+  fs.writeFileSync(path.join(nd, "skills", "using-skills", "SKILL.md"), "---\nname: using-skills\ndescription: Shallow\n---\nb");
+  const ndRes = scanSource(nd, "skills-dir", { skills: "skills/*/*" });
+  (ndRes.some(x => x.name === "beta") && ndRes.some(x => x.name === "using-skills")) ? ok("skills-dir nested+glob+mixed-depth scan") : bad("nested/mixed skills missed");
+  // agents-dir
+  const ad = path.join(root, "ad"); fs.mkdirSync(ad, { recursive: true });
+  fs.writeFileSync(path.join(ad, "rev.md"), "---\nid: rev\ndescription: Reviewer\n---\nbody");
+  fs.writeFileSync(path.join(ad, "README.md"), "# readme");
+  const adRes = scanSource(ad, "agents-dir", { agents: "." });
+  (adRes.length === 1 && adRes[0].type === "agent" && adRes[0].name === "rev") ? ok("agents-dir scan (excludes README)") : bad("agents-dir wrong");
+  // claude-plugin-marketplace (local plugins)
+  const mp = path.join(root, "mp");
+  fs.mkdirSync(path.join(mp, "plugins", "qa", "skills", "lint"), { recursive: true });
+  fs.writeFileSync(path.join(mp, "plugins", "qa", "skills", "lint", "SKILL.md"), "---\nname: lint\ndescription: Lint\n---\nb");
+  fs.mkdirSync(path.join(mp, "plugins", "qa", "agents"), { recursive: true });
+  fs.writeFileSync(path.join(mp, "plugins", "qa", "agents", "cr.md"), "---\nid: cr\ndescription: CR\n---\nb");
+  const mpRes = scanSource(mp, "claude-plugin-marketplace", {});
+  (mpRes.some(x => x.type === "skill" && x.name === "lint") && mpRes.some(x => x.type === "agent" && x.name === "cr")) ? ok("marketplace scan") : bad("marketplace wrong");
+  let threw = false; try { scanSource(sd, "bogus", {}); } catch { threw = true; } threw ? ok("rejects unknown layout") : bad("bad layout not rejected");
+  fs.rmSync(root, { recursive: true, force: true });
+} catch (e) { bad("scan-source threw: " + e.message); }
+
+// 14. install-experts --source-path/--pick installs + writes manifest (offline fixture)
+console.log("\ninstall-experts source:");
+const stmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-src-"));
+const sproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-sproj-"));
+try {
+  fs.writeFileSync(path.join(stmp, "rev.md"), "---\nid: rev\nkind: agent\ndescription: Reviewer\n---\nReview stuff.");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", stmp, "--layout", "agents-dir", "--ref", "abc123", "--pick", "rev"], { stdio: "ignore" });
+  !fs.existsSync(path.join(sproj, ".claude", "agents", "rev.md")) ? ok("source: no write without --yes") : bad("wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude,antigravity", "--source-id", "fix", "--source-path", stmp, "--layout", "agents-dir", "--ref", "abc123", "--pick", "rev", "--yes"], { stdio: "ignore" });
+  fs.existsSync(path.join(sproj, ".claude", "agents", "rev.md")) ? ok("source: claude agent written") : bad("claude agent missing");
+  fs.existsSync(path.join(sproj, ".agent", "workflows", "rev.md")) ? ok("source: antigravity workflow written") : bad("antigravity workflow missing");
+  const man = JSON.parse(fs.readFileSync(path.join(sproj, ".aics-experts.json"), "utf8"));
+  (man.experts && man.experts.length === 1 && man.experts[0].id === "rev" && man.experts[0].source === "fix" && man.experts[0].ref === "abc123" && Array.isArray(man.experts[0].tools)) ? ok("manifest written") : bad("manifest wrong");
+  !path.isAbsolute(man.experts[0].sourcePath) ? ok("manifest sourcePath is relative") : bad("manifest sourcePath absolute (home leak)");
+  fs.mkdirSync(path.join(stmp, "skills", "helper"), { recursive: true });
+  fs.writeFileSync(path.join(stmp, "skills", "helper", "SKILL.md"), "---\nname: helper\nkind: skill\ndescription: H\n---\nb");
+  fs.writeFileSync(path.join(stmp, "skills", "helper", "extra.txt"), "data");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", path.join(stmp, "skills"), "--layout", "skills-dir", "--ref", "abc123", "--pick", "helper", "--yes"], { stdio: "ignore" });
+  (fs.existsSync(path.join(sproj, ".claude", "skills", "helper", "SKILL.md")) && fs.existsSync(path.join(sproj, ".claude", "skills", "helper", "extra.txt"))) ? ok("source: skill dir copied with helper files") : bad("skill dir copy missing files");
+  // reject a skill dir containing a symlink (defense-in-depth)
+  fs.mkdirSync(path.join(stmp, "skills", "evilskill"), { recursive: true });
+  fs.writeFileSync(path.join(stmp, "skills", "evilskill", "SKILL.md"), "---\nname: evilskill\nkind: skill\ndescription: E\n---\nb");
+  let symMade = true; try { fs.symlinkSync("/etc/passwd", path.join(stmp, "skills", "evilskill", "leak")); } catch { symMade = false; }
+  if (symMade) {
+    let blocked = false;
+    try { execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", path.join(stmp, "skills"), "--layout", "skills-dir", "--ref", "abc123", "--pick", "evilskill", "--yes"], { stdio: "ignore" }); } catch { blocked = true; }
+    (blocked || !fs.existsSync(path.join(sproj, ".claude", "skills", "evilskill", "leak"))) ? ok("source: skill with symlink rejected") : bad("symlink copied into project");
+  } else { ok("source: symlink rejection (skipped: no symlink perm)"); }
+  let badId = false; try { execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "bad/id", "--source-path", stmp, "--layout", "agents-dir", "--ref", "r", "--pick", "rev", "--yes"], { stdio: "ignore" }); } catch { badId = true; }
+  badId ? ok("rejects invalid source-id") : bad("invalid source-id not rejected");
+} catch (e) { bad("install-experts source threw: " + e.message); }
+fs.rmSync(stmp, { recursive: true, force: true }); fs.rmSync(sproj, { recursive: true, force: true });
+
+// 15. install-experts --update refreshes from a (changed) fixture source
+console.log("\ninstall-experts update:");
+const utmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-usrc-"));
+const uproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-uproj-"));
+try {
+  fs.writeFileSync(path.join(utmp, "rev.md"), "---\nid: rev\nkind: agent\ndescription: v1\n---\nold body");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), uproj, "--tools", "claude", "--source-id", "fix", "--source-path", utmp, "--layout", "agents-dir", "--ref", "r1", "--pick", "rev", "--yes"], { stdio: "ignore" });
+  fs.writeFileSync(path.join(utmp, "rev.md"), "---\nid: rev\nkind: agent\ndescription: v2\n---\nNEW body");
+  const upPrev = execFileSync("node", [path.join(ROOT, "install-experts.js"), uproj, "--update", "--source-path-map", "fix=" + utmp + ",fix.ref=r2"], { encoding: "utf8" });
+  upPrev.includes("rev") ? ok("update preview lists rev") : bad("update preview missing rev");
+  !fs.readFileSync(path.join(uproj, ".claude", "agents", "rev.md"), "utf8").includes("NEW body") ? ok("update preview writes nothing") : bad("update wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), uproj, "--update", "--source-path-map", "fix=" + utmp + ",fix.ref=r2", "--yes"], { stdio: "ignore" });
+  fs.readFileSync(path.join(uproj, ".claude", "agents", "rev.md"), "utf8").includes("NEW body") ? ok("update applied with --yes") : bad("update not applied");
+  const man = JSON.parse(fs.readFileSync(path.join(uproj, ".aics-experts.json"), "utf8"));
+  man.experts[0].ref === "r2" ? ok("manifest ref bumped") : bad("manifest ref not bumped");
+} catch (e) { bad("install-experts update threw: " + e.message); }
+fs.rmSync(utmp, { recursive: true, force: true }); fs.rmSync(uproj, { recursive: true, force: true });
+
+// 16. install-experts --generate writes an agent-authored spec (no network)
+console.log("\ninstall-experts generate:");
+const gproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-gen-"));
+const gspec = path.join(gproj, "_spec.md");
+try {
+  fs.writeFileSync(gspec, "---\nid: niche-helper\nkind: agent\ndescription: Bespoke niche helper\n---\nDo the niche thing.");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--tools", "claude", "--generate", "--spec-file", gspec], { stdio: "ignore" });
+  !fs.existsSync(path.join(gproj, ".claude", "agents", "niche-helper.md")) ? ok("generate: no write without --yes") : bad("wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--tools", "claude", "--generate", "--spec-file", gspec, "--yes"], { stdio: "ignore" });
+  fs.existsSync(path.join(gproj, ".claude", "agents", "niche-helper.md")) ? ok("generate: agent written") : bad("generated agent missing");
+  const man = JSON.parse(fs.readFileSync(path.join(gproj, ".aics-experts.json"), "utf8"));
+  (man.experts[0].id === "niche-helper" && man.experts[0].source === "generated" && man.experts[0].ref === "local") ? ok("generate: manifest source=generated") : bad("generate manifest wrong");
+  const up = execFileSync("node", [path.join(ROOT, "install-experts.js"), gproj, "--update", "--yes"], { encoding: "utf8" });
+  up.includes("generated") ? ok("update skips generated") : bad("update did not skip generated");
+} catch (e) { bad("install-experts generate threw: " + e.message); }
+fs.rmSync(gproj, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

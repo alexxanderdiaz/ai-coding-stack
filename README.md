@@ -92,6 +92,28 @@ node install-experts.js . --tools claude,codex --experts api-backend-pro,code-re
 - **Writes require `--yes`** (the installer previews otherwise); `--dry-run` previews, `--force` overwrites.
 - Always review generated files before relying on them.
 
+### Live discovery from trusted collections
+Beyond the bundled catalog, `project-init` can pull best-fit skills/agents from a
+curated allowlist of popular collections (`catalog/sources.json`) — fetched, pinned,
+and installed only where relevant:
+```bash
+node lib/fetch-source.js wshobson-agents          # clone (pinned) -> {path, ref}
+node lib/scan-source.js <path> claude-plugin-marketplace   # list what's inside
+node install-experts.js . --tools claude,codex --source-id wshobson-agents \
+  --source-path <path> --layout claude-plugin-marketplace --ref <ref> --pick code-reviewer --dry-run
+node install-experts.js . --update --dry-run        # refresh installed experts
+```
+- Sources are an **allowlist** (host-checked HTTPS, `--depth 1`, SHA-pinned, symlinks rejected, **never executed**; permissive license only).
+- Installs are recorded in `.aics-experts.json` (provenance); `--update` re-fetches latest with a preview and `--yes` gate.
+- Fresh at install; nothing auto-updates silently.
+
+**Three layers (quality-first):** 1) bundled catalog (offline) -> 2) live trusted sources (above) -> 3) **generate** a bespoke skill/agent only for gaps:
+```bash
+# the agent authors a spec to /tmp/spec.md, then:
+node install-experts.js . --tools claude,codex --generate --spec-file /tmp/spec.md --dry-run
+```
+Generated experts are recorded as `source: "generated"` and skipped by `--update`.
+
 ---
 
 ## Demo
@@ -127,6 +149,9 @@ AICS_RCLONE=myremote:ai-config ./sync/backup.sh   # to your own rclone remote
 | `lib/match-experts.js` | Stack + purpose → expert shortlist |
 | `lib/render-expert.js` | Spec → per-tool native format |
 | `install-experts.js` | Install rendered experts into selected tools |
+| `catalog/sources.json` | Trusted-source allowlist for live discovery |
+| `lib/fetch-source.js` | Clone (pinned) + host allowlist + symlink reject |
+| `lib/scan-source.js` | Enumerate skills/agents in a fetched source |
 
 ---
 

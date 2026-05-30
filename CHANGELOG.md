@@ -12,6 +12,12 @@ follows [Semantic Versioning](https://semver.org/).
   `lib/render-expert.js`, and `install-experts.js` — render best-fit experts to each
   tool's native format (Claude `.md`, Codex `.toml`, Antigravity workflow) with
   `project-init --with-experts` and an approval-gated (`--yes`) skill flow.
+- Live expert discovery (3 layers, quality-first): `catalog/sources.json` allowlist
+  (permissive-license, host-checked) + `lib/fetch-source.js` (pinned clone, symlink reject)
+  + `lib/scan-source.js`; install from fetched sources with a `.aics-experts.json` provenance
+  manifest and `install-experts.js --update` (preview + `--yes`). `--generate` authors a
+  bespoke skill/agent for niche gaps (`source:"generated"`, skipped by `--update`).
+  Agent-driven selection via the project-init skill; bundled catalog = offline fallback.
 
 ## [0.1.1] - 2026-05-29
 ### Added

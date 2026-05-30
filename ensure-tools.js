@@ -9,6 +9,7 @@
  *   node ensure-tools.js codex
  *   node ensure-tools.js antigravity
  *   node ensure-tools.js all
+ *   node ensure-tools.js claude,codex   # a subset (comma list)
  *   node ensure-tools.js <tool> --check   # detect only, install nothing
  */
 const os = require("os");
@@ -106,7 +107,7 @@ function ensureTool(tool) {
 
 const positional = ARGV.filter(a => !a.startsWith("--"));
 let tools = positional.flatMap(a => a.split(",")).map(s => s.trim()).filter(Boolean);
-if (!tools.length || tools.includes("all")) tools = Object.keys(REG);
+if (!tools.length || tools.includes("all")) tools = Object.keys(REG);  // "all" or empty -> full set
 tools = [...new Set(tools)];
 log(`ensure-tools (${process.platform}) — ${CHECK ? "CHECK only" : "install missing"}`);
 for (const t of tools) ensureTool(t);

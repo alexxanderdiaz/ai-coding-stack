@@ -191,5 +191,40 @@ try {
   trav ? ok("fetchSource rejects traversal id") : bad("traversal id not rejected");
 } catch (e) { bad("fetch-source threw: " + e.message); }
 
+// 13. scan-source enumerates skills/agents per layout (fixtures, no network)
+console.log("\nscan-source:");
+try {
+  const { scanSource } = require(path.join(ROOT, "lib", "scan-source.js"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "aics-scan-"));
+  // skills-dir (one level)
+  const sd = path.join(root, "sd"); fs.mkdirSync(path.join(sd, "alpha"), { recursive: true });
+  fs.writeFileSync(path.join(sd, "alpha", "SKILL.md"), "---\nname: alpha\ndescription: A skill\n---\nbody");
+  const sdRes = scanSource(sd, "skills-dir", { skills: "." });
+  (sdRes.length === 1 && sdRes[0].type === "skill" && sdRes[0].name === "alpha" && sdRes[0].description === "A skill") ? ok("skills-dir scan") : bad("skills-dir wrong");
+  // nested skills (skills/<cat>/<skill>/SKILL.md) + mixed depth, glob path "skills/*/*"
+  const nd = path.join(root, "nd"); fs.mkdirSync(path.join(nd, "skills", "cat", "beta"), { recursive: true });
+  fs.writeFileSync(path.join(nd, "skills", "cat", "beta", "SKILL.md"), "---\nname: beta\ndescription: Nested\n---\nb");
+  fs.mkdirSync(path.join(nd, "skills", "using-skills"), { recursive: true });
+  fs.writeFileSync(path.join(nd, "skills", "using-skills", "SKILL.md"), "---\nname: using-skills\ndescription: Shallow\n---\nb");
+  const ndRes = scanSource(nd, "skills-dir", { skills: "skills/*/*" });
+  (ndRes.some(x => x.name === "beta") && ndRes.some(x => x.name === "using-skills")) ? ok("skills-dir nested+glob+mixed-depth scan") : bad("nested/mixed skills missed");
+  // agents-dir
+  const ad = path.join(root, "ad"); fs.mkdirSync(ad, { recursive: true });
+  fs.writeFileSync(path.join(ad, "rev.md"), "---\nid: rev\ndescription: Reviewer\n---\nbody");
+  fs.writeFileSync(path.join(ad, "README.md"), "# readme");
+  const adRes = scanSource(ad, "agents-dir", { agents: "." });
+  (adRes.length === 1 && adRes[0].type === "agent" && adRes[0].name === "rev") ? ok("agents-dir scan (excludes README)") : bad("agents-dir wrong");
+  // claude-plugin-marketplace (local plugins)
+  const mp = path.join(root, "mp");
+  fs.mkdirSync(path.join(mp, "plugins", "qa", "skills", "lint"), { recursive: true });
+  fs.writeFileSync(path.join(mp, "plugins", "qa", "skills", "lint", "SKILL.md"), "---\nname: lint\ndescription: Lint\n---\nb");
+  fs.mkdirSync(path.join(mp, "plugins", "qa", "agents"), { recursive: true });
+  fs.writeFileSync(path.join(mp, "plugins", "qa", "agents", "cr.md"), "---\nid: cr\ndescription: CR\n---\nb");
+  const mpRes = scanSource(mp, "claude-plugin-marketplace", {});
+  (mpRes.some(x => x.type === "skill" && x.name === "lint") && mpRes.some(x => x.type === "agent" && x.name === "cr")) ? ok("marketplace scan") : bad("marketplace wrong");
+  let threw = false; try { scanSource(sd, "bogus", {}); } catch { threw = true; } threw ? ok("rejects unknown layout") : bad("bad layout not rejected");
+  fs.rmSync(root, { recursive: true, force: true });
+} catch (e) { bad("scan-source threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

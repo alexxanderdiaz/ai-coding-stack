@@ -135,6 +135,18 @@ AICS_RCLONE=myremote:ai-config ./sync/backup.sh   # to your own rclone remote
 ./sync/restore.sh ai-config-YYYYMMDD.tgz
 ```
 
+## Optional: Context7 docs MCP
+
+[Context7](https://context7.com) injects version-accurate library docs into the agent's context (Next.js, React, Tailwind, etc.), cutting hallucinated/deprecated APIs. It's a hosted MCP server — **bring your own key** (free at context7.com); nothing is stored in this repo.
+
+```bash
+# get a key at https://context7.com, then register the MCP (key stays local):
+claude mcp add --transport http --scope user context7 \
+  https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: <your-key>"
+```
+
+Keep the key in your environment (`CONTEXT7_API_KEY`) or a gitignored file — never commit it.
+
 ## Components
 
 | File | Role |

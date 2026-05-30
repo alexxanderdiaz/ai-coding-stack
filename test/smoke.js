@@ -170,5 +170,22 @@ try {
   s.sources.every(x => x.license) ? ok("licenses recorded") : bad("missing license");
 } catch (e) { bad("sources threw: " + e.message); }
 
+// 12. fetch-source guards (host allowlist + symlink rejection) — no network
+console.log("\nfetch-source:");
+try {
+  const { isAllowedHost, rejectSymlinks } = require(path.join(ROOT, "lib", "fetch-source.js"));
+  isAllowedHost("https://github.com/a/b", "github.com") ? ok("allows github.com") : bad("github rejected");
+  !isAllowedHost("https://github.com.evil.com/a/b", "github.com") ? ok("rejects look-alike host") : bad("look-alike allowed");
+  !isAllowedHost("https://gitlab.com/a/b", "gitlab.com") ? ok("rejects non-allowlisted host") : bad("non-allowlisted allowed");
+  !isAllowedHost("/local/path", "github.com") ? ok("rejects non-URL") : bad("non-URL allowed");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "aics-sym-"));
+  fs.mkdirSync(path.join(d, "sub")); fs.writeFileSync(path.join(d, "sub", "ok.txt"), "x");
+  rejectSymlinks(d); ok("clean tree passes rejectSymlinks");
+  let made = true; try { fs.symlinkSync("/etc/passwd", path.join(d, "evil")); } catch { made = false; }
+  if (made) { let threw = false; try { rejectSymlinks(d); } catch { threw = true; } threw ? ok("symlink rejected") : bad("symlink not rejected"); }
+  else { ok("symlink rejected (skipped: no symlink perm)"); }
+  fs.rmSync(d, { recursive: true, force: true });
+} catch (e) { bad("fetch-source threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

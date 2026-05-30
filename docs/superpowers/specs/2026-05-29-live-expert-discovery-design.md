@@ -41,6 +41,15 @@ private setup. The **deterministic** parts — fetch (pinned), scan, render, ins
 manifest, update — are plain Node. Sources are a curated allowlist of large, vetted,
 popular collections; the agent picks *within* them what fits the project.
 
+**Three layers, tried in order (quality-first):**
+1. **Bundled catalog** (Approach A) — offline, vetted, instant. Common roles.
+2. **Live trusted sources** (this spec) — fetch best-fit from the allowlist. Preferred
+   for well-known needs (battle-tested, community-vetted beats LLM-improvised).
+3. **Generation fallback** — when no bundled/community skill fits a niche need, the
+   agent **authors a bespoke skill/agent** (a canonical spec) and installs it via the
+   same render pipeline (`source: "generated"`). Low security risk (it is instruction
+   text, not third-party code); the risk is quality, so it is last, only for gaps.
+
 ---
 
 ## Components
@@ -76,6 +85,11 @@ popular collections; the agent picks *within* them what fits the project.
 - `host` is the exact hostname checked against the allowlist before any clone.
 - Seed sources are added in the implementation task and **each repo URL/owner is
   verified with `gh repo view` before being committed** (no guessed URLs land).
+- **License check:** only add sources with a permissive license (MIT/Apache/BSD/ISC).
+  Skip repos with no license (all-rights-reserved) or copyleft you don't want. Record
+  the license in the entry (`"license": "MIT"`). We only reference + fetch (never
+  vendor their content into this repo), but installs into a user project preserve any
+  bundled `LICENSE`/attribution.
 - The registry grows over time via `git pull` of the public repo.
 
 ### 2. `lib/fetch-source.js`
@@ -137,6 +151,20 @@ popular collections; the agent picks *within* them what fits the project.
   If no network or a source is unreachable, bundled experts still install. The SKILL
   prefers live sources when reachable, falls back to bundled otherwise.
 
+### 9. Generation fallback (layer 3)
+- When neither the bundled catalog nor the trusted sources have a fit for a niche
+  project need, the agent (in the SKILL) **authors a canonical spec** (frontmatter
+  `id`/`kind`/`description` + Markdown body) for the missing skill/agent, writes it to
+  a temp file, and runs `install-experts.js --generate --spec-file <path>`.
+- The installer `parseSpec`s the file and renders it per detected tool via the same
+  `renderExpert` pipeline; manifest entry is `{ source: "generated", ref: "local" }`.
+- `--update` **skips** `source:"generated"` entries (nothing to re-fetch; they are
+  locally authored). The agent can re-author/`--force` if it wants to revise one.
+- Security: generated content is instruction text the agent wrote — no third-party
+  code, no fetch, no execution. Same `--yes` gate, `safeJoin`, and id validation apply.
+- Order: generation is the LAST resort (quality of community skills > LLM-improvised),
+  used only for gaps the first two layers cannot fill.
+
 ---
 
 ## Data flow
@@ -183,6 +211,9 @@ pick relevant sources ──► fetch-source (clone --depth1, pin SHA, reject sy
 - `--update`: with a fixture whose content changed, preview lists the change; `--yes`
   applies and updates the manifest ref.
 - Offline path: bundled catalog install still passes (regression).
+- Generation: `install-experts.js --generate --spec-file <fixture>` renders the
+  authored spec per tool into a temp project, writes a `source:"generated"` manifest
+  entry, respects `--yes`; `--update` skips generated entries.
 
 ## Components summary
 
@@ -191,7 +222,7 @@ pick relevant sources ──► fetch-source (clone --depth1, pin SHA, reject sy
 | `catalog/sources.json` | trusted-source allowlist | Create |
 | `lib/fetch-source.js` | clone (pinned) + allowlist + symlink reject | Create |
 | `lib/scan-source.js` | enumerate skills/agents in a fetched source | Create |
-| `install-experts.js` | `--source/--pick` install + `.aics-experts.json` + `--update` | Modify |
+| `install-experts.js` | `--source/--pick` install + `.aics-experts.json` + `--update` + `--generate` | Modify |
 | `skills/project-init/SKILL.md` | agent-driven discovery + approval flow | Modify |
 | `project-init.js` | staleness hint from manifest | Modify |
 | `test/smoke.js` | fixtures, no network | Modify |

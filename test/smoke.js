@@ -244,6 +244,15 @@ try {
   fs.writeFileSync(path.join(stmp, "skills", "helper", "extra.txt"), "data");
   execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", path.join(stmp, "skills"), "--layout", "skills-dir", "--ref", "abc123", "--pick", "helper", "--yes"], { stdio: "ignore" });
   (fs.existsSync(path.join(sproj, ".claude", "skills", "helper", "SKILL.md")) && fs.existsSync(path.join(sproj, ".claude", "skills", "helper", "extra.txt"))) ? ok("source: skill dir copied with helper files") : bad("skill dir copy missing files");
+  // reject a skill dir containing a symlink (defense-in-depth)
+  fs.mkdirSync(path.join(stmp, "skills", "evilskill"), { recursive: true });
+  fs.writeFileSync(path.join(stmp, "skills", "evilskill", "SKILL.md"), "---\nname: evilskill\nkind: skill\ndescription: E\n---\nb");
+  let symMade = true; try { fs.symlinkSync("/etc/passwd", path.join(stmp, "skills", "evilskill", "leak")); } catch { symMade = false; }
+  if (symMade) {
+    let blocked = false;
+    try { execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", path.join(stmp, "skills"), "--layout", "skills-dir", "--ref", "abc123", "--pick", "evilskill", "--yes"], { stdio: "ignore" }); } catch { blocked = true; }
+    (blocked || !fs.existsSync(path.join(sproj, ".claude", "skills", "evilskill", "leak"))) ? ok("source: skill with symlink rejected") : bad("symlink copied into project");
+  } else { ok("source: symlink rejection (skipped: no symlink perm)"); }
 } catch (e) { bad("install-experts source threw: " + e.message); }
 fs.rmSync(stmp, { recursive: true, force: true }); fs.rmSync(sproj, { recursive: true, force: true });
 

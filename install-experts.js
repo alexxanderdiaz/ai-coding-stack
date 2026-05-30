@@ -13,6 +13,7 @@ const os = require("os");
 const path = require("path");
 const { parseSpec, renderExpert, TOOLS } = require(path.join(__dirname, "lib", "render-expert.js"));
 const { scanSource } = require(path.join(__dirname, "lib", "scan-source.js"));
+const { rejectSymlinks } = require(path.join(__dirname, "lib", "fetch-source.js"));
 
 const ARGV = process.argv.slice(2);
 const DRY = ARGV.includes("--dry-run");
@@ -77,6 +78,7 @@ function installFromSource(projectDir, tools) {
       if (item.type === "skill") {
         const destDir = safeJoin(baseDir(tool, projectDir), t.skillSub(name).replace(/\/SKILL\.md$/,""));
         if (PREVIEW) { console.log(`  would copy [${tool}] ${name}/ (skill dir)`); continue; }
+        rejectSymlinks(item.dir);
         fs.rmSync(destDir, { recursive:true, force:true });
         fs.mkdirSync(path.dirname(destDir), { recursive:true });
         fs.cpSync(item.dir, destDir, { recursive:true });

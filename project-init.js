@@ -93,6 +93,18 @@ ${cmdLines}
       console.log(`>> Install:  add --yes after reviewing the preview.`);
     }
   }
+  try {
+    const mf = path.join(dir, ".aics-experts.json");
+    if (fs.existsSync(mf)) {
+      const man = JSON.parse(fs.readFileSync(mf, "utf8"));
+      const n = (man.experts || []).length;
+      if (n) {
+        const srcs = [...new Set(man.experts.map(e => e.source))].join(", ");
+        const oldest = man.experts.map(e => e.installedAt).filter(Boolean).sort()[0] || "?";
+        console.log(`>> ${n} expert(s) installed from ${srcs} (since ${String(oldest).slice(0, 10)}). Refresh: node install-experts.js . --update --dry-run`);
+      }
+    }
+  } catch { /* ignore */ }
 }
 
 if (require.main === module) main();

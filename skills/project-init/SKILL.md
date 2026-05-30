@@ -1,7 +1,7 @@
 ---
 name: project-init
 description: Scaffold the current project for the best AI-coding-agent experience. Use when the user says "project-init", "set up this project", "initialize this project", or opens a new project. Detects the stack, writes AGENTS.md (+ GEMINI.md for Antigravity) with real commands and a STATE.md continuity log; if relevant skills/agents are missing, discovers good ones online (with approval).
-allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*)
+allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*), Bash(git:*), Bash(gh:*)
 ---
 
 # project-init
@@ -23,14 +23,23 @@ Configure the current project directory. `AGENTS.md` is the cross-tool context f
 
 4. **Fill the high-value sections** (best practice): the files ship with placeholders for **Structure** and **Non-obvious patterns**. Inspect the repo and fill them — structure high-level; patterns ONLY the counterintuitive (one real example > three paragraphs); pair prohibitions with alternatives. Keep each file <150 lines.
 
-5. **Discover experts (optional, approval-gated):** set up best-fit skills/agents for this stack.
-   - Get suggested ids: run project-init with `--with-experts`, or `node "<repo>/lib/match-experts.js" . "<about text>"`.
-   - Refine the shortlist against the user's stated purpose (drop irrelevant ones).
-   - Pick target tools from what the user installed: `node "<repo>/ensure-tools.js" all --check`.
-   - **Preview** (writes nothing): `node "<repo>/install-experts.js" . --tools <selected> --experts <ids> --dry-run`.
-   - Show the preview plan and get explicit user approval. Only then re-run with `--yes` to write. The installer refuses to write without `--yes`.
-   - Codex installs to GLOBAL `~/.codex` (affects all projects) — call this out before `--yes`.
-   - Bundled specs are vetted and offline. Never install unvetted third-party content without approval.
+5. **Discover experts (approval-gated) — three layers, quality-first:**
+   Detect installed tools first: `node "<repo>/ensure-tools.js" all --check`.
+
+   **Layer 1 — bundled catalog (offline, instant):** for common roles, install vetted experts: `node "<repo>/install-experts.js" . --tools <detected> --experts <ids> --dry-run` then `--yes`.
+
+   **Layer 2 — live trusted sources (preferred for known needs):**
+   - Trusted sources are in `<repo>/catalog/sources.json` (allowlist, each with a `license`). Pick the sources whose `tags` fit the role/`--about`.
+   - Fetch (cached, pinned): `node "<repo>/lib/fetch-source.js" <sourceId>` → prints `{path, ref}`.
+   - List inside: `node "<repo>/lib/scan-source.js" <path> <layout>`.
+   - **Choose only what's relevant to THIS project.** Optionally rank by `gh repo view`.
+   - Preview: `node "<repo>/install-experts.js" . --tools <detected> --source-id <id> --source-path <path> --layout <layout> --ref <ref> --pick <names> --dry-run` → show proposal (items + source + ref) → approve → re-run with `--yes`.
+   - **Never run anything from a fetched source**; only `SKILL.md`/agent `.md` text is used.
+
+   **Layer 3 — generate (only for gaps):** if neither layer covers a niche need, AUTHOR a canonical spec (frontmatter `id`/`kind`/`description` + body) to a temp file and: `node "<repo>/install-experts.js" . --tools <detected> --generate --spec-file <tmp> --dry-run` → approve → `--yes`. Prefer real community skills over generated ones; generate last.
+
+   - Codex installs to GLOBAL `~/.codex` — say so before `--yes`. Offline/source unreachable → use Layer 1.
+   - Refresh later: `node "<repo>/install-experts.js" . --update --dry-run` then `--yes` (generated entries are skipped).
 
 6. **Report** the detected stack, commands, and what landed in the files.
 

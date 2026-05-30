@@ -127,5 +127,22 @@ try {
   bad3.length === 0 ? ok("no spec contains triple-quote") : bad("specs with triple-quote: " + bad3.join(","));
 } catch (e) { bad("spec scan threw: " + e.message); }
 
+// 9. install-experts writes rendered experts into a temp project (claude/antigravity local)
+console.log("\ninstall-experts:");
+const itmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-exp-"));
+try {
+  const dry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
+  dry.includes("agents/code-reviewer.md") ? ok("dry-run lists claude agent path") : bad("dry-run path missing");
+  !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("dry-run writes nothing") : bad("dry-run wrote files");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer"], { stdio: "ignore" });
+  !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("no write without --yes") : bad("wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude,antigravity", "--experts", "code-reviewer,python-pro", "--yes"], { stdio: "ignore" });
+  fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("claude agent written") : bad("claude agent missing");
+  fs.existsSync(path.join(itmp, ".agent", "workflows", "code-reviewer.md")) ? ok("antigravity workflow written") : bad("antigravity workflow missing");
+  fs.existsSync(path.join(itmp, ".claude", "skills", "python-pro", "SKILL.md")) ? ok("claude skill written") : bad("claude skill missing");
+  fs.existsSync(path.join(itmp, ".agent", "skills", "python-pro", "SKILL.md")) ? ok("antigravity skill written") : bad("antigravity skill missing");
+} catch (e) { bad("install-experts threw: " + e.message); }
+fs.rmSync(itmp, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

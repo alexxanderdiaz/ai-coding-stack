@@ -47,6 +47,7 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 Direct, no menu:
 ```bash
 node setup.js --tools          # install/verify the AI coding tools
+node setup.js --tools claude,codex   # install only a subset
 node setup.js --init --about "REST API for recurring billing"   # scaffold cwd
 node setup.js --all            # both
 ```
@@ -70,6 +71,26 @@ Copy `skills/project-init/` into your tool's skills dir, then just say `project-
 - **Codex:** `~/.codex/skills/project-init/`
 - **Antigravity:** `~/.gemini/skills/project-init/`
 - **Claude Code:** use `node project-init.js .`, or wire it as a skill in `~/.claude/skills/`.
+
+---
+
+## Expert discovery (skills & agents)
+
+`project-init` can suggest and install best-fit **skills and agents** for your stack
+and purpose, rendered to each tool's native format:
+
+```bash
+node project-init.js . --about "REST API for billing" --with-experts   # prints suggestions
+node install-experts.js . --tools claude,codex --experts api-backend-pro,code-reviewer --dry-run
+node install-experts.js . --tools claude,codex --experts api-backend-pro,code-reviewer --yes
+```
+
+- Experts come from a **bundled, vetted catalog** (`catalog/`) — offline, no third-party code.
+- Rendered per tool: Claude `.claude/agents/*.md`, Codex `~/.codex/agents/*.toml`,
+  Antigravity `.agent/workflows/*.md`; skills go to each tool's `skills/` dir.
+- **Claude/Antigravity install project-local; Codex installs globally (`~/.codex`, affects all projects).**
+- **Writes require `--yes`** (the installer previews otherwise); `--dry-run` previews, `--force` overwrites.
+- Always review generated files before relying on them.
 
 ---
 
@@ -102,6 +123,10 @@ AICS_RCLONE=myremote:ai-config ./sync/backup.sh   # to your own rclone remote
 | `lib/detect-stack.js` | Stack + real commands detection |
 | `hooks/state-snapshot.js` | Claude Stop hook → git snapshot in STATE.md |
 | `skills/project-init/` | In-tool `project-init` trigger (Codex/Antigravity) |
+| `catalog/` | Vetted expert catalog + canonical specs |
+| `lib/match-experts.js` | Stack + purpose → expert shortlist |
+| `lib/render-expert.js` | Spec → per-tool native format |
+| `install-experts.js` | Install rendered experts into selected tools |
 
 ---
 

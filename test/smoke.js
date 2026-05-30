@@ -226,5 +226,26 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 } catch (e) { bad("scan-source threw: " + e.message); }
 
+// 14. install-experts --source-path/--pick installs + writes manifest (offline fixture)
+console.log("\ninstall-experts source:");
+const stmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-src-"));
+const sproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-sproj-"));
+try {
+  fs.writeFileSync(path.join(stmp, "rev.md"), "---\nid: rev\nkind: agent\ndescription: Reviewer\n---\nReview stuff.");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", stmp, "--layout", "agents-dir", "--ref", "abc123", "--pick", "rev"], { stdio: "ignore" });
+  !fs.existsSync(path.join(sproj, ".claude", "agents", "rev.md")) ? ok("source: no write without --yes") : bad("wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude,antigravity", "--source-id", "fix", "--source-path", stmp, "--layout", "agents-dir", "--ref", "abc123", "--pick", "rev", "--yes"], { stdio: "ignore" });
+  fs.existsSync(path.join(sproj, ".claude", "agents", "rev.md")) ? ok("source: claude agent written") : bad("claude agent missing");
+  fs.existsSync(path.join(sproj, ".agent", "workflows", "rev.md")) ? ok("source: antigravity workflow written") : bad("antigravity workflow missing");
+  const man = JSON.parse(fs.readFileSync(path.join(sproj, ".aics-experts.json"), "utf8"));
+  (man.experts && man.experts.length === 1 && man.experts[0].id === "rev" && man.experts[0].source === "fix" && man.experts[0].ref === "abc123" && Array.isArray(man.experts[0].tools)) ? ok("manifest written") : bad("manifest wrong");
+  fs.mkdirSync(path.join(stmp, "skills", "helper"), { recursive: true });
+  fs.writeFileSync(path.join(stmp, "skills", "helper", "SKILL.md"), "---\nname: helper\nkind: skill\ndescription: H\n---\nb");
+  fs.writeFileSync(path.join(stmp, "skills", "helper", "extra.txt"), "data");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), sproj, "--tools", "claude", "--source-id", "fix", "--source-path", path.join(stmp, "skills"), "--layout", "skills-dir", "--ref", "abc123", "--pick", "helper", "--yes"], { stdio: "ignore" });
+  (fs.existsSync(path.join(sproj, ".claude", "skills", "helper", "SKILL.md")) && fs.existsSync(path.join(sproj, ".claude", "skills", "helper", "extra.txt"))) ? ok("source: skill dir copied with helper files") : bad("skill dir copy missing files");
+} catch (e) { bad("install-experts source threw: " + e.message); }
+fs.rmSync(stmp, { recursive: true, force: true }); fs.rmSync(sproj, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

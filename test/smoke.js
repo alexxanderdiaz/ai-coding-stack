@@ -256,5 +256,23 @@ try {
 } catch (e) { bad("install-experts source threw: " + e.message); }
 fs.rmSync(stmp, { recursive: true, force: true }); fs.rmSync(sproj, { recursive: true, force: true });
 
+// 15. install-experts --update refreshes from a (changed) fixture source
+console.log("\ninstall-experts update:");
+const utmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-usrc-"));
+const uproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-uproj-"));
+try {
+  fs.writeFileSync(path.join(utmp, "rev.md"), "---\nid: rev\nkind: agent\ndescription: v1\n---\nold body");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), uproj, "--tools", "claude", "--source-id", "fix", "--source-path", utmp, "--layout", "agents-dir", "--ref", "r1", "--pick", "rev", "--yes"], { stdio: "ignore" });
+  fs.writeFileSync(path.join(utmp, "rev.md"), "---\nid: rev\nkind: agent\ndescription: v2\n---\nNEW body");
+  const upPrev = execFileSync("node", [path.join(ROOT, "install-experts.js"), uproj, "--update", "--source-path-map", "fix=" + utmp + ",fix.ref=r2"], { encoding: "utf8" });
+  upPrev.includes("rev") ? ok("update preview lists rev") : bad("update preview missing rev");
+  !fs.readFileSync(path.join(uproj, ".claude", "agents", "rev.md"), "utf8").includes("NEW body") ? ok("update preview writes nothing") : bad("update wrote without --yes");
+  execFileSync("node", [path.join(ROOT, "install-experts.js"), uproj, "--update", "--source-path-map", "fix=" + utmp + ",fix.ref=r2", "--yes"], { stdio: "ignore" });
+  fs.readFileSync(path.join(uproj, ".claude", "agents", "rev.md"), "utf8").includes("NEW body") ? ok("update applied with --yes") : bad("update not applied");
+  const man = JSON.parse(fs.readFileSync(path.join(uproj, ".aics-experts.json"), "utf8"));
+  man.experts[0].ref === "r2" ? ok("manifest ref bumped") : bad("manifest ref not bumped");
+} catch (e) { bad("install-experts update threw: " + e.message); }
+fs.rmSync(utmp, { recursive: true, force: true }); fs.rmSync(uproj, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

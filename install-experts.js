@@ -13,7 +13,8 @@ const os = require("os");
 const path = require("path");
 const { parseSpec, renderExpert, TOOLS } = require(path.join(__dirname, "lib", "render-expert.js"));
 const { scanSource } = require(path.join(__dirname, "lib", "scan-source.js"));
-const { rejectSymlinks } = require(path.join(__dirname, "lib", "fetch-source.js"));
+const { rejectSymlinks, fetchSource } = require(path.join(__dirname, "lib", "fetch-source.js"));
+const sources = (() => { try { return require(path.join(__dirname, "catalog", "sources.json")).sources; } catch { return []; } })();
 
 const ARGV = process.argv.slice(2);
 const DRY = ARGV.includes("--dry-run");
@@ -54,6 +55,54 @@ function flagVal(name){ const i=ARGV.indexOf(name); return (i>=0 && ARGV[i+1] &&
 function readManifest(projectDir){ try { return JSON.parse(fs.readFileSync(path.join(projectDir,".aics-experts.json"),"utf8")); } catch { return { version:1, experts:[] }; } }
 function writeManifest(projectDir, man){ fs.writeFileSync(path.join(projectDir,".aics-experts.json"), JSON.stringify(man,null,2)+"\n"); }
 function upsertManifest(man, rec){ man.experts = (man.experts||[]).filter(e => e.id!==rec.id); man.experts.push(rec); return man; }
+
+function sourcePathMap() {
+  const raw = flagVal("--source-path-map"); const m = {};
+  if (!raw) return m;
+  for (const pair of raw.split(",")) { const i = pair.indexOf("="); if (i>0) m[pair.slice(0,i)] = pair.slice(i+1); }
+  return m;
+}
+
+function doUpdate(projectDir, tools) {
+  const man = readManifest(projectDir);
+  if (!man.experts || !man.experts.length) { console.log("No .aics-experts.json experts to update."); return; }
+  const overrides = sourcePathMap();
+  const resolved = {};
+  const targetTools = tools && tools.length ? tools : null;
+  console.log(`install-experts --update${PREVIEW ? " (preview; --yes to write)" : ""}`);
+  for (const rec of man.experts) {
+    if (rec.source === "generated") { console.log(`  = ${rec.id} (generated; nothing to fetch)`); continue; }
+    if (!resolved[rec.source]) {
+      if (overrides[rec.source]) { resolved[rec.source] = { path: overrides[rec.source], ref: overrides[rec.source + ".ref"] || "updated" }; }
+      else { const entry = sources.find(s => s.id === rec.source); if (!entry) { console.log(`  ! source not in allowlist: ${rec.source} (skip ${rec.id})`); continue; } resolved[rec.source] = fetchSource(entry); }
+    }
+    const src = resolved[rec.source]; if (!src) continue;
+    const avail = scanSource(src.path, rec.layout, {});
+    const item = avail.find(a => a.name === rec.id);
+    if (!item) { console.log(`  ! ${rec.id} no longer in ${rec.source} (kept)`); continue; }
+    const useTools = targetTools || rec.tools || [];
+    for (const tool of useTools) {
+      const t = TOOLS[tool]; if (!t) continue;
+      if (item.type === "skill") {
+        const destDir = safeJoin(baseDir(tool, projectDir), t.skillSub(rec.id).replace(/\/SKILL\.md$/,""));
+        if (PREVIEW) { console.log(`  would refresh [${tool}] ${rec.id}/`); continue; }
+        rejectSymlinks(item.dir);
+        fs.rmSync(destDir, { recursive:true, force:true }); fs.mkdirSync(path.dirname(destDir), { recursive:true }); fs.cpSync(item.dir, destDir, { recursive:true });
+        console.log(`  ~ [${tool}] skills/${rec.id}/`);
+      } else {
+        const spec = parseSpec(fs.readFileSync(item.file, "utf8")); if (!spec.meta.id) spec.meta.id = rec.id; if (!spec.meta.kind) spec.meta.kind = "agent";
+        const { subpath, content } = renderExpert(spec, tool);
+        const dest = safeJoin(baseDir(tool, projectDir), subpath);
+        if (PREVIEW) { console.log(`  would refresh [${tool}] ${subpath}`); continue; }
+        fs.mkdirSync(path.dirname(dest), { recursive:true }); fs.writeFileSync(dest, content);
+        console.log(`  ~ [${tool}] ${subpath}`);
+      }
+    }
+    if (!PREVIEW) { rec.ref = src.ref; rec.installedAt = new Date().toISOString(); }
+  }
+  if (!PREVIEW) writeManifest(projectDir, man);
+  else if (!DRY) console.log("Preview only — re-run with --yes to apply updates.");
+}
 
 function installFromSource(projectDir, tools) {
   const sourceId = flagVal("--source-id");
@@ -109,6 +158,7 @@ function main() {
   let tools = flagList("--tools");
   if (!tools.length || tools.includes("all")) tools = ALL_TOOLS;
   tools = [...new Set(tools)].filter(t => ALL_TOOLS.includes(t));
+  if (ARGV.includes("--update")) return doUpdate(projectDir, flagList("--tools").filter(t => ALL_TOOLS.includes(t)));
   if (ARGV.includes("--source-id")) return installFromSource(projectDir, tools);
   const ids = flagList("--experts");
   const catalog = require(path.join(CATALOG_DIR, "catalog.json"));

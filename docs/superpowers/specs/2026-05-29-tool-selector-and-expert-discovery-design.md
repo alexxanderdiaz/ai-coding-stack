@@ -32,6 +32,10 @@ library does. Two gaps:
   curated `skills-library`. Private gets the tool selector only.
 - No live open-web skill search in this iteration (that is Approach B, future).
 - No execution of any downloaded content; no post-install scripts.
+- Codex experts are installed globally (`~/.codex`), so they are NOT scoped to a
+  single project — an expert installed for one project is visible to all Codex
+  projects. This is an accepted limitation of Codex (no reliable per-project skills
+  dir), not a defect to "fix" later. Claude/Antigravity remain project-local.
 
 ## Approach
 
@@ -158,11 +162,29 @@ added later without a redesign.
 
 - Bundled specs are committed and reviewed in-repo — no network, no third-party code
   execution.
-- Discovery is opt-in; installation always requires explicit confirmation of the
-  expert list and the target tools.
-- Approach B (future) restricts `source.type:"git"` to an allowlist of hosts/orgs,
-  pins to a commit SHA, clones `--depth 1`, shows repo + SHA before cloning, and
-  never runs scripts from cloned content.
+- Discovery is opt-in. **The approval gate is enforced in code, not just prose:**
+  `install-experts.js` previews and refuses to write unless `--yes` is passed. The
+  in-tool skill must show the `--dry-run` plan, get explicit user approval, then
+  re-run with `--yes`.
+- **Path-traversal hardening (must-fix):** `meta.id` is validated against
+  `/^[A-Za-z0-9_-]+$/` and rejected otherwise; every write path is built with a
+  `safeJoin(base, subpath)` that rejects any destination escaping the tool's base
+  dir. This blocks a crafted spec `id` like `../../.ssh/authorized_keys`.
+- **Render injection hardening (must-fix):** the Codex agent body is emitted as a
+  TOML basic multi-line string (`"""`) with `\`/`"`/control-char escaping — never a
+  literal `'''` block (which a body containing `'''` could break out of). YAML
+  frontmatter `description` is emitted as a quoted, single-line, escaped scalar. A
+  smoke test asserts no bundled spec body contains `'''`.
+- **CRLF safety:** `parseSpec` normalizes `\r\n` → `\n` so Windows checkouts parse.
+- **Codex global scope:** Codex installs to `~/.codex` (global). The installer prints
+  an explicit warning before writing there. Consequence (accepted, not a bug): an
+  expert installed for one project is visible to every project that uses Codex —
+  see Non-goals. Claude/Antigravity stay project-local.
+- Approach B (future) restricts `source.type:"git"` to an allowlist matched by
+  `new URL(repo).hostname === <allowed>` (never substring `includes`, to avoid
+  `github.com.evil.com`), pins to a commit SHA, clones `--depth 1`, **rejects the
+  clone if any file is a symlink** (`lstatSync().isSymbolicLink()`), shows repo + SHA
+  before cloning, and never runs scripts from cloned content.
 - Existing files are preserved unless `--force`; `--dry-run` previews all writes.
 
 ## Testing (`test/smoke.js`, extended)
@@ -171,9 +193,12 @@ added later without a redesign.
 - `matchExperts` returns expected ids for a Go (`backend`) fixture and a React
   (`frontend`) fixture; `code-reviewer` (`*`) always present.
 - `renderExpert` produces a Claude `.md` with valid frontmatter, a Codex `.toml`
-  that round-trips key fields, and an Antigravity workflow `.md`.
-- `install-experts.js --dry-run` lists the right paths per tool; a real install into
-  a temp dir writes the expected files and is idempotent.
+  with a `"""` instructions block, and an Antigravity workflow `.md`; rejects a
+  traversal `id` and a bad `kind`; `parseSpec` handles CRLF.
+- No bundled spec body contains `'''`.
+- `install-experts.js` does NOT write without `--yes` (gate); `--dry-run`/preview
+  lists the right paths per tool; a `--yes` install into a temp dir writes the
+  expected files and is idempotent.
 - `ensure-tools.js` accepts a comma list (`claude,codex` → both attempted, in
   `--check` mode no install).
 

@@ -225,7 +225,7 @@ Files: Create lib/match-experts.js; Test test/smoke.js.
         if (score > 0) out.push({ ...e, score });
       }
       const seen = new Set();
-      return out.sort((a, b) => b.score - a.score).filter(e => (seen.has(e.id) ? false : seen.add(e.id)));
+      return out.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).filter(e => (seen.has(e.id) ? false : seen.add(e.id)));
     }
     module.exports = { matchExperts };
     if (require.main === module) {
@@ -257,17 +257,33 @@ Files: Create lib/render-expert.js; Test test/smoke.js.
       const cl = renderExpert(spec, "claude");
       cl.subpath === "agents/code-reviewer.md" && cl.content.startsWith("---") && cl.content.includes("name: code-reviewer") ? ok("claude agent .md") : bad("claude render wrong");
       const cx = renderExpert(spec, "codex");
-      cx.subpath === "agents/code-reviewer.toml" && cx.content.includes('name = "code-reviewer"') && cx.content.includes("instructions = '''") ? ok("codex agent .toml") : bad("codex render wrong");
+      cx.subpath === "agents/code-reviewer.toml" && cx.content.includes('name = "code-reviewer"') && cx.content.includes('instructions = """') ? ok("codex agent .toml") : bad("codex render wrong");
       const ag = renderExpert(spec, "antigravity");
       ag.subpath === "workflows/code-reviewer.md" ? ok("antigravity workflow .md") : bad("antigravity render wrong");
       const skillSpec = parseSpec(fs.readFileSync(path.join(ROOT, "catalog", "specs", "python-pro.md"), "utf8"));
       renderExpert(skillSpec, "claude").subpath === "skills/python-pro/SKILL.md" ? ok("skill -> SKILL.md") : bad("skill subpath wrong");
+      // security: crafted id must not escape base dir; bad kind must throw
+      try { renderExpert({ meta: { id: "../evil", kind: "agent" }, body: "x" }, "claude"); bad("id traversal not blocked"); }
+      catch { ok("rejects traversal id"); }
+      try { renderExpert({ meta: { id: "ok", kind: "bogus" }, body: "x" }, "claude"); bad("bad kind not rejected"); }
+      catch { ok("rejects bad kind"); }
+      // CRLF frontmatter still parses
+      parseSpec("---\r\nid: x\r\nkind: skill\r\n---\r\nbody").meta.id === "x" ? ok("parseSpec handles CRLF") : bad("CRLF parse failed");
     } catch (e) { bad("render-expert threw: " + e.message); }
+    // no spec body may contain ''' (would break TOML literal strings) — defense in depth
+    try {
+      const specsDir = path.join(ROOT, "catalog", "specs");
+      const bad3 = fs.readdirSync(specsDir).filter(f => fs.readFileSync(path.join(specsDir, f), "utf8").includes("'''"));
+      bad3.length === 0 ? ok("no spec contains triple-quote") : bad("specs with ''': " + bad3.join(","));
+    } catch (e) { bad("spec scan threw: " + e.message); }
 
 - [ ] Step 2: run -> FAIL (module missing).
 - [ ] Step 3: implement lib/render-expert.js:
 
+    const VALID_ID = /^[A-Za-z0-9_-]+$/;
+
     function parseSpec(text) {
+      text = String(text).replace(/\r\n/g, "\n");           // normalize CRLF (Windows checkout)
       const m = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text);
       if (!m) return { meta: {}, body: text.trim() };
       const meta = {};
@@ -277,33 +293,56 @@ Files: Create lib/render-expert.js; Test test/smoke.js.
       }
       return { meta, body: m[2].trim() };
     }
-    function tomlString(s) {
-      return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\r\n]+/g, " ").trim() + '"';
+
+    // double-quoted, escaped, single-line YAML scalar (safe for frontmatter)
+    function yamlScalar(s) { return JSON.stringify(String(s || "").replace(/[\r\n]+/g, " ").trim()); }
+    // single-line TOML basic string
+    function tomlString(s) { return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\r\n]+/g, " ").trim() + '"'; }
+    // TOML basic MULTI-line string ("""): escapes \ and " and control chars so the body can never break out
+    function tomlBasicML(s) {
+      const esc = String(s || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+        .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+      return '"""\n' + esc + '\n"""';
     }
-    function skillFile(meta, body) {
-      return `---\nname: ${meta.id}\ndescription: ${meta.description || ""}\n---\n\n${body}\n`;
-    }
+    function skillFile(meta, body) { return `---\nname: ${meta.id}\ndescription: ${yamlScalar(meta.description)}\n---\n\n${body}\n`; }
+
+    // Per-tool descriptor: single source of truth for where files go + how agents render.
+    // scope/dirName are consumed by install-experts.js baseDir(); adding a tool = one entry here.
+    const TOOLS = {
+      claude: {
+        scope: "project", dirName: ".claude",
+        skillSub: id => `skills/${id}/SKILL.md`, agentSub: id => `agents/${id}.md`,
+        renderAgent: (meta, body) => {
+          const fm = ["---", `name: ${meta.id}`, `description: ${yamlScalar(meta.description)}`];
+          if (meta.tools) fm.push(`tools: ${meta.tools}`);
+          fm.push("---");
+          return `${fm.join("\n")}\n\n${body}\n`;
+        },
+      },
+      codex: {
+        scope: "global", dirName: ".codex",
+        skillSub: id => `skills/${id}/SKILL.md`, agentSub: id => `agents/${id}.toml`,
+        renderAgent: (meta, body) => `name = ${tomlString(meta.id)}\ndescription = ${tomlString(meta.description || "")}\ninstructions = ${tomlBasicML(body)}\n`,
+      },
+      antigravity: {
+        scope: "project", dirName: ".agent",
+        skillSub: id => `skills/${id}/SKILL.md`, agentSub: id => `workflows/${id}.md`,
+        renderAgent: (meta, body) => `---\ndescription: ${yamlScalar(meta.description)}\n---\n\n${body}\n`,
+      },
+    };
+
     function renderExpert(spec, tool) {
       const { meta, body } = spec;
       const id = meta.id;
-      const isAgent = meta.kind === "agent";
-      if (!isAgent) return { subpath: `skills/${id}/SKILL.md`, content: skillFile(meta, body) };
-      if (tool === "claude") {
-        const fm = ["---", `name: ${id}`, `description: ${meta.description || ""}`];
-        if (meta.tools) fm.push(`tools: ${meta.tools}`);
-        fm.push("---");
-        return { subpath: `agents/${id}.md`, content: `${fm.join("\n")}\n\n${body}\n` };
-      }
-      if (tool === "codex") {
-        const lines = [`name = ${tomlString(id)}`, `description = ${tomlString(meta.description || "")}`, `instructions = '''\n${body}\n'''`];
-        return { subpath: `agents/${id}.toml`, content: lines.join("\n") + "\n" };
-      }
-      if (tool === "antigravity") {
-        return { subpath: `workflows/${id}.md`, content: `---\ndescription: ${meta.description || ""}\n---\n\n${body}\n` };
-      }
-      throw new Error(`unknown tool: ${tool}`);
+      if (!VALID_ID.test(id || "")) throw new Error(`invalid expert id: ${JSON.stringify(id)}`);  // blocks path traversal
+      if (meta.kind !== "agent" && meta.kind !== "skill") throw new Error(`invalid kind for ${id}: ${meta.kind}`);
+      const t = TOOLS[tool];
+      if (!t) throw new Error(`unknown tool: ${tool}`);
+      if (meta.kind === "skill") return { subpath: t.skillSub(id), content: skillFile(meta, body) };
+      return { subpath: t.agentSub(id), content: t.renderAgent(meta, body) };
     }
-    module.exports = { parseSpec, renderExpert, tomlString };
+
+    module.exports = { parseSpec, renderExpert, tomlString, TOOLS };
 
 - [ ] Step 4: run -> PASS.
 - [ ] Step 5: commit `feat: render-expert converts specs to per-tool native formats`.
@@ -323,7 +362,11 @@ Files: Create install-experts.js; Test test/smoke.js.
       const dry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
       dry.includes("agents/code-reviewer.md") ? ok("dry-run lists claude agent path") : bad("dry-run path missing");
       !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("dry-run writes nothing") : bad("dry-run wrote files");
-      execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude,antigravity", "--experts", "code-reviewer,python-pro"], { stdio: "ignore" });
+      // without --yes (and not --dry-run) it must NOT write — approval gate enforced in code
+      execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer"], { stdio: "ignore" });
+      !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("no write without --yes") : bad("wrote without --yes");
+      // with --yes it writes (claude + antigravity project-local; codex omitted to avoid touching ~/.codex)
+      execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude,antigravity", "--experts", "code-reviewer,python-pro", "--yes"], { stdio: "ignore" });
       fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("claude agent written") : bad("claude agent missing");
       fs.existsSync(path.join(itmp, ".agent", "workflows", "code-reviewer.md")) ? ok("antigravity workflow written") : bad("antigravity workflow missing");
       fs.existsSync(path.join(itmp, ".claude", "skills", "python-pro", "SKILL.md")) ? ok("claude skill written") : bad("claude skill missing");
@@ -337,12 +380,14 @@ Files: Create install-experts.js; Test test/smoke.js.
     const fs = require("fs");
     const os = require("os");
     const path = require("path");
-    const { parseSpec, renderExpert } = require(path.join(__dirname, "lib", "render-expert.js"));
+    const { parseSpec, renderExpert, TOOLS } = require(path.join(__dirname, "lib", "render-expert.js"));
     const ARGV = process.argv.slice(2);
     const DRY = ARGV.includes("--dry-run");
+    const YES = ARGV.includes("--yes");
     const FORCE = ARGV.includes("--force");
+    const PREVIEW = DRY || !YES;                 // approval gate: never write unless --yes
     const CATALOG_DIR = path.join(__dirname, "catalog");
-    const ALL_TOOLS = ["claude", "codex", "antigravity"];
+    const ALL_TOOLS = Object.keys(TOOLS);
     function flagList(name) {
       const i = ARGV.indexOf(name);
       if (i < 0) return [];
@@ -351,13 +396,20 @@ Files: Create install-experts.js; Test test/smoke.js.
       return v.split(",").map(s => s.trim()).filter(Boolean);
     }
     function baseDir(tool, projectDir) {
-      if (tool === "claude") return path.join(projectDir, ".claude");
-      if (tool === "antigravity") return path.join(projectDir, ".agent");
-      if (tool === "codex") return path.join(os.homedir(), ".codex");
-      throw new Error(`unknown tool: ${tool}`);
+      const t = TOOLS[tool];
+      if (!t) throw new Error(`unknown tool: ${tool}`);
+      return t.scope === "global" ? path.join(os.homedir(), t.dirName) : path.join(projectDir, t.dirName);
+    }
+    // resolve subpath under base and refuse anything that escapes it (defense-in-depth vs traversal)
+    function safeJoin(base, subpath) {
+      const root = path.resolve(base);
+      const dest = path.resolve(root, subpath);
+      if (dest !== root && !dest.startsWith(root + path.sep)) throw new Error(`path traversal blocked: ${subpath}`);
+      return dest;
     }
     function main() {
       const projectDir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--tools" && ARGV[i - 1] !== "--experts") || process.cwd());
+      if (!fs.existsSync(projectDir)) { console.error(`install-experts: directory not found: ${projectDir}`); process.exit(1); }
       let tools = flagList("--tools");
       if (!tools.length || tools.includes("all")) tools = ALL_TOOLS;
       tools = [...new Set(tools)].filter(t => ALL_TOOLS.includes(t));
@@ -365,7 +417,8 @@ Files: Create install-experts.js; Test test/smoke.js.
       const catalog = require(path.join(CATALOG_DIR, "catalog.json"));
       const byId = Object.fromEntries(catalog.experts.map(e => [e.id, e]));
       if (!ids.length) { console.log("No experts selected. Pass --experts id1,id2"); return; }
-      console.log(`install-experts -> tools: ${tools.join(", ")} | experts: ${ids.join(", ")}${DRY ? " (dry-run)" : ""}`);
+      console.log(`install-experts -> tools: ${tools.join(", ")} | experts: ${ids.join(", ")}${DRY ? " (dry-run)" : (PREVIEW ? " (preview; pass --yes to write)" : "")}`);
+      if (tools.includes("codex") && !PREVIEW) console.log("  ! codex writes to GLOBAL ~/.codex — affects every project on this machine.");
       for (const id of ids) {
         const entry = byId[id];
         if (!entry) { console.log(`  ! unknown expert: ${id}`); continue; }
@@ -373,16 +426,17 @@ Files: Create install-experts.js; Test test/smoke.js.
         const spec = parseSpec(fs.readFileSync(path.join(CATALOG_DIR, entry.spec), "utf8"));
         for (const tool of tools) {
           const { subpath, content } = renderExpert(spec, tool);
-          const dest = path.join(baseDir(tool, projectDir), subpath);
-          const where = tool === "codex" ? "~/.codex" : (tool === "claude" ? ".claude" : ".agent");
-          if (DRY) { console.log(`  would write [${tool}] ${where}/${subpath}`); continue; }
+          const dest = safeJoin(baseDir(tool, projectDir), subpath);
+          const where = TOOLS[tool].scope === "global" ? "~/" + TOOLS[tool].dirName : TOOLS[tool].dirName;
+          if (PREVIEW) { console.log(`  would write [${tool}] ${where}/${subpath}`); continue; }
           if (fs.existsSync(dest) && !FORCE) { console.log(`  = [${tool}] ${subpath} exists (kept; --force to overwrite)`); continue; }
           fs.mkdirSync(path.dirname(dest), { recursive: true });
           fs.writeFileSync(dest, content);
           console.log(`  + [${tool}] ${where}/${subpath}`);
         }
       }
-      console.log("Done. Review the generated files before relying on them.");
+      if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write the files above.");
+      else if (!PREVIEW) console.log("Done. Review the generated files before relying on them.");
     }
     if (require.main === module) main();
 
@@ -407,7 +461,8 @@ Files: Modify project-init.js (inside main, after the Ready log); modify skills/
       })();
       if (ids.length) {
         console.log(`>> Suggested experts for this stack: ${ids.join(", ")}`);
-        console.log(`>> Install (after review): node install-experts.js . --tools <claude,codex,antigravity> --experts ${ids.join(",")}`);
+        console.log(`>> Preview:  node install-experts.js . --tools claude --experts ${ids.join(",")} --dry-run   # edit the tool list`);
+        console.log(`>> Install:  add --yes after reviewing the preview.`);
       }
     }
 
@@ -416,7 +471,7 @@ Files: Modify project-init.js (inside main, after the Ready log); modify skills/
     T=$(mktemp -d); printf 'module demo\ngo 1.22\n' > "$T/go.mod"; node project-init.js "$T" --about "rest api" --with-experts --force; rm -rf "$T"
 
   Expected: includes `Suggested experts for this stack:` with api-backend-pro + code-reviewer.
-- [ ] Step 3: SKILL.md -> set `allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*)` and replace step 5 with the approval-gated discovery flow (get ids via --with-experts or match-experts.js; refine from --about; pick installed tools via ensure-tools --check; dry-run; show plan + confirm; install; never install unvetted third-party without approval).
+- [ ] Step 3: SKILL.md -> set `allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*)` and replace step 5 with the approval-gated discovery flow: get ids via `--with-experts` or `match-experts.js`; refine from `--about`; pick installed tools via `ensure-tools --check`; run `install-experts.js ... --dry-run` to PREVIEW; show the plan and get explicit user approval; only then re-run with `--yes` to write. The installer itself refuses to write without `--yes` (gate enforced in code, not just prose). Warn that Codex writes globally to `~/.codex`. Never install unvetted third-party content without approval.
 - [ ] Step 4: run `node test/smoke.js` -> PASS.
 - [ ] Step 5: commit `feat: project-init --with-experts suggestions + skill discovery flow`.
 
@@ -427,7 +482,7 @@ Files: Modify project-init.js (inside main, after the Ready log); modify skills/
 Files: Modify README.md, CHANGELOG.md.
 
 - [ ] Step 1: README Quickstart "Direct, no menu" add: `node setup.js --tools claude,codex   # install only a subset`.
-- [ ] Step 2: README new "## Expert discovery (skills & agents)" section after project-init-in-detail: the 3 example commands (--with-experts, install --dry-run, install) + 4 bullets (bundled vetted catalog offline; per-tool render paths; claude/antigravity project-local vs codex global; review files / --dry-run / --force).
+- [ ] Step 2: README new "## Expert discovery (skills & agents)" section after project-init-in-detail: the 3 example commands (`--with-experts`; `install-experts ... --dry-run`; `install-experts ... --yes`) + bullets: bundled vetted catalog offline; per-tool render paths (Claude `.claude/agents/*.md`, Codex `~/.codex/agents/*.toml`, Antigravity `.agent/workflows/*.md`; skills -> each tool's `skills/` dir, project-local under `.claude`/`.agent`); **Claude/Antigravity install project-local, Codex global (`~/.codex`, affects all projects)**; **writes require `--yes` (the installer previews otherwise)**, `--dry-run` previews, `--force` overwrites; always review generated files.
 - [ ] Step 3: README Components table add rows: catalog/, lib/match-experts.js, lib/render-expert.js, install-experts.js.
 - [ ] Step 4: CHANGELOG Unreleased -> Added: tool selection (subset install across setup/ensure-tools/ps1) + expert discovery (catalog + match/render/install + project-init --with-experts + approval-gated skill).
 - [ ] Step 5: run `node test/smoke.js` -> PASS; commit `docs: tool selection and expert discovery`.

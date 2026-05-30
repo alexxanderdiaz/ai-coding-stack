@@ -77,7 +77,7 @@ function passInit() {
 
 if (ARGV.includes("--tools")) dispatch("tools", parseToolList());
 else if (ARGV.includes("--init")) dispatch("init");
-else if (ARGV.includes("--all")) dispatch("all", "all");
+else if (ARGV.includes("--all")) dispatch("all", parseToolList());
 else {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   console.log("\nai-coding-stack\n  1) Install AI coding tools\n  2) Scaffold this project (project-init)\n  3) Both");

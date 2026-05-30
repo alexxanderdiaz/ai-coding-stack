@@ -101,5 +101,31 @@ try {
   matchExperts(catalog, feDet, "").map(e => e.id).includes("frontend-pro") ? ok("React -> frontend-pro") : bad("missed frontend-pro");
 } catch (e) { bad("match-experts threw: " + e.message); }
 
+// 8. render-expert produces per-tool native formats
+console.log("\nrender-expert:");
+try {
+  const { parseSpec, renderExpert } = require(path.join(ROOT, "lib", "render-expert.js"));
+  const spec = parseSpec(fs.readFileSync(path.join(ROOT, "catalog", "specs", "code-reviewer.md"), "utf8"));
+  spec.meta.id === "code-reviewer" && spec.meta.kind === "agent" ? ok("parseSpec reads frontmatter") : bad("parseSpec frontmatter wrong");
+  const cl = renderExpert(spec, "claude");
+  cl.subpath === "agents/code-reviewer.md" && cl.content.startsWith("---") && cl.content.includes("name: code-reviewer") ? ok("claude agent .md") : bad("claude render wrong");
+  const cx = renderExpert(spec, "codex");
+  cx.subpath === "agents/code-reviewer.toml" && cx.content.includes('name = "code-reviewer"') && cx.content.includes('instructions = """') ? ok("codex agent .toml") : bad("codex render wrong");
+  const ag = renderExpert(spec, "antigravity");
+  ag.subpath === "workflows/code-reviewer.md" ? ok("antigravity workflow .md") : bad("antigravity render wrong");
+  const skillSpec = parseSpec(fs.readFileSync(path.join(ROOT, "catalog", "specs", "python-pro.md"), "utf8"));
+  renderExpert(skillSpec, "claude").subpath === "skills/python-pro/SKILL.md" ? ok("skill -> SKILL.md") : bad("skill subpath wrong");
+  try { renderExpert({ meta: { id: "../evil", kind: "agent" }, body: "x" }, "claude"); bad("id traversal not blocked"); }
+  catch { ok("rejects traversal id"); }
+  try { renderExpert({ meta: { id: "ok", kind: "bogus" }, body: "x" }, "claude"); bad("bad kind not rejected"); }
+  catch { ok("rejects bad kind"); }
+  parseSpec("---\r\nid: x\r\nkind: skill\r\n---\r\nbody").meta.id === "x" ? ok("parseSpec handles CRLF") : bad("CRLF parse failed");
+} catch (e) { bad("render-expert threw: " + e.message); }
+try {
+  const specsDir = path.join(ROOT, "catalog", "specs");
+  const bad3 = fs.readdirSync(specsDir).filter(f => fs.readFileSync(path.join(specsDir, f), "utf8").includes("'''"));
+  bad3.length === 0 ? ok("no spec contains triple-quote") : bad("specs with triple-quote: " + bad3.join(","));
+} catch (e) { bad("spec scan threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

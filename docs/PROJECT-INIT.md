@@ -21,7 +21,12 @@ One run writes four files at the project root:
 
 ## Flags
 ```
-node project-init.js [dir] [--about "what it is"] [--force]
+node project-init.js [dir] [--about "what it is"] [--force] [--with-experts] [--gemini]
 ```
 - `--about` → seeds the **Goal** section (most valuable for empty/new folders).
 - `--force` → overwrite existing files (default: keep).
+- `--with-experts` → after writing the context files, print best-fit experts for the detected stack plus the install/preview command (`node install-experts.js . ... --dry-run`).
+- `--gemini` → (in-tool skill script) also writes `GEMINI.md` for Antigravity.
+
+## Discovering experts
+After scaffolding, `project-init` can suggest and install best-fit skills/agents for your stack — bundled catalog, live trusted sources, or generated for gaps. See README "Expert discovery (skills & agents)".

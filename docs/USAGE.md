@@ -8,6 +8,21 @@ cd ai-coding-stack && ./setup.sh        # → 1) Install tools
 Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`. Then authenticate:
 `claude` → `/login` · `codex login` · Antigravity → sign in with Google.
 
+Install only a subset of tools:
+```bash
+node setup.js --tools claude,codex      # install/verify only Claude Code + Codex
+```
+Interactively, the menu asks **"Which tools?"** after you pick an action:
+```text
+Which tools? (comma list, or 'all')
+  1) Claude Code   2) Codex   3) Antigravity
+  e.g. "1,3" or "all"
+```
+Windows:
+```powershell
+.\setup.ps1 -Tools claude,codex
+```
+
 Check only (install nothing):
 ```bash
 node ensure-tools.js all --check
@@ -20,6 +35,11 @@ node /path/to/ai-coding-stack/project-init.js . --about "What this project is"
 ```
 Writes `AGENTS.md` + `CLAUDE.md` + `GEMINI.md` + `STATE.md` with detected stack and real commands. Open the folder in any tool — each reads its file.
 
+Add `--with-experts` to also print best-fit skills/agents for the detected stack plus the install/preview command:
+```bash
+node /path/to/ai-coding-stack/project-init.js . --about "..." --with-experts
+```
+
 ## From inside a tool (skill)
 Install the trigger once:
 ```bash
@@ -27,6 +47,40 @@ cp -r skills/project-init ~/.codex/skills/          # Codex
 cp -r skills/project-init ~/.gemini/skills/         # Antigravity
 ```
 Then in the tool's chat: **"project-init"** or "set up this project" → the agent runs it.
+
+## Install experts (skills & agents)
+
+`install-experts.js` renders best-fit skills/agents to each tool's native format and writes them in. Quality-first, three layers + refresh. **Writes require `--yes`** — without it (or with `--dry-run`) you only get a preview. Installs are recorded in `.aics-experts.json` (provenance) at the project root. **Codex installs to GLOBAL `~/.codex` — it affects every project on the machine.**
+
+### Layer 1 — bundled catalog (offline)
+```bash
+node install-experts.js . --tools claude,codex --experts code-reviewer,api-backend-pro --dry-run
+node install-experts.js . --tools claude,codex --experts code-reviewer,api-backend-pro --yes
+```
+
+### Layer 2 — live trusted source
+```bash
+node lib/fetch-source.js wshobson-agents                       # clone (pinned) → prints {path, ref}
+node lib/scan-source.js <path> claude-plugin-marketplace       # list installable skills/agents
+node install-experts.js . --tools claude --source-id wshobson-agents \
+  --source-path <path> --layout claude-plugin-marketplace --ref <ref> --pick <name> --dry-run
+# review the proposal, then re-run with --yes:
+node install-experts.js . --tools claude --source-id wshobson-agents \
+  --source-path <path> --layout claude-plugin-marketplace --ref <ref> --pick <name> --yes
+```
+
+### Layer 3 — generate (only for gaps)
+```bash
+# the agent authors a canonical spec (frontmatter id/kind/description + body) to /tmp/spec.md, then:
+node install-experts.js . --tools claude --generate --spec-file /tmp/spec.md --dry-run
+node install-experts.js . --tools claude --generate --spec-file /tmp/spec.md --yes
+```
+
+### Refresh installed experts
+```bash
+node install-experts.js . --update --dry-run    # preview re-fetched latest
+node install-experts.js . --update --yes         # apply (generated entries are skipped)
+```
 
 ## Continuity between sessions/tools
 ```text

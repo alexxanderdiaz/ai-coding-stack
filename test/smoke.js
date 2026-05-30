@@ -87,5 +87,19 @@ try {
   specsOk ? ok("all spec files exist") : bad("missing spec file");
 } catch (e) { bad("catalog threw: " + e.message); }
 
+// 7. match-experts ranks experts by stack + about text
+console.log("\nmatch-experts:");
+try {
+  const catalog = require(path.join(ROOT, "catalog", "catalog.json"));
+  const { matchExperts } = require(path.join(ROOT, "lib", "match-experts.js"));
+  const goDet = { suggestedProfile: "backend", languages: ["Go"], frameworks: [] };
+  const goIds = matchExperts(catalog, goDet, "build a REST api").map(e => e.id);
+  goIds.includes("api-backend-pro") ? ok("Go backend -> api-backend-pro") : bad("missed api-backend-pro");
+  goIds.includes("code-reviewer") ? ok("always includes code-reviewer (*)") : bad("missed code-reviewer");
+  !goIds.includes("frontend-pro") ? ok("excludes frontend-pro for Go") : bad("frontend-pro wrongly matched");
+  const feDet = { suggestedProfile: "frontend", languages: ["TypeScript"], frameworks: ["React"] };
+  matchExperts(catalog, feDet, "").map(e => e.id).includes("frontend-pro") ? ok("React -> frontend-pro") : bad("missed frontend-pro");
+} catch (e) { bad("match-experts threw: " + e.message); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

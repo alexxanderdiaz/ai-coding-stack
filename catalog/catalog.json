@@ -6,7 +6,7 @@
       "description": "Reviews changes for bugs, security, and maintainability.",
       "spec": "specs/code-reviewer.md", "source": { "type": "bundled" } },
     { "id": "frontend-pro", "kind": "skill", "profiles": ["frontend"], "languages": [], "frameworks": ["React", "Next.js", "Vue"],
-      "keywords": ["frontend", "ui", "component", "css", "accessibility"],
+      "keywords": ["frontend", "ui design", "component", "css", "accessibility"],
       "description": "Frontend patterns: components, state, accessibility, performance.",
       "spec": "specs/frontend-pro.md", "source": { "type": "bundled" } },
     { "id": "api-backend-pro", "kind": "skill", "profiles": ["backend"], "languages": ["Go"], "frameworks": ["Node backend", "Django", "Flask", "FastAPI"],

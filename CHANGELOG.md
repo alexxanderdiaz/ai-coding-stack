@@ -6,6 +6,12 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-05-31
+### Fixed
+- In-tool `project-init` generated AGENTS.md/STATE.md with **Spanish** section headers in the public (English) repo — the bundled scaffolder template is now fully English.
+### Changed
+- `project-init` SKILL.md now **requires asking the user what the project is about** before generating (no silent inference from folder/README), and makes **Layer-2 live skill discovery required for domain-specific projects** (e.g. a Fortinet project pulls network/security skills, not just the generic bundled roles).
+
 ## [0.2.6] - 2026-05-31
 ### Changed
 - Docs (README + ARCHITECTURE) now list the stack-detection coverage: Terraform, Azure Bicep, Shell, and Azure CLI/azd (alongside Node/Python/Go/Rust/Java/Docker), with example commands.
@@ -113,7 +119,8 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.3...v0.2.4

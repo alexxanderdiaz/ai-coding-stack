@@ -59,6 +59,7 @@ const REG = {
       linux: ["npm", "install", "-g", "@anthropic-ai/claude-code"],
     },
     gui: {
+      optional: true,  // CLI is the product; desktop app is a bonus (none on Linux)
       detect: () => process.platform === "win32" ? wingetHas("Anthropic.Claude") : process.platform === "darwin" ? macApp("Claude.app") : false,
       win32: ["winget", "install", "--id", "Anthropic.Claude", "-e", "--silent", "--accept-source-agreements", "--accept-package-agreements"],
       darwin: ["brew", "install", "--cask", "claude"],
@@ -73,6 +74,7 @@ const REG = {
       linux: ["npm", "install", "-g", "@openai/codex"],
     },
     gui: {
+      optional: true,  // CLI is the product; Codex.app is macOS-first and manual
       // OpenAI Codex desktop is macOS-first (Codex.app); no verified winget/Linux GUI.
       detect: () => process.platform === "darwin" ? macApp("Codex.app") : process.platform === "win32" ? wingetHas("OpenAI.Codex") : false,
       win32: null,        // no verified standalone Codex GUI on winget — CLI covers it
@@ -185,7 +187,10 @@ function ensureComponent(tool, kind) {
   if (CHECK) { log(`  ✗ ${tag} MISSING`); return; }
   const argv = c[process.platform];
   const url = MANUAL_URLS[tool] ? ` — get it at ${MANUAL_URLS[tool]}` : "";
-  if (!argv) { log(`  ! ${tag} missing — no automatic installer on ${process.platform}; install manually${url}`); return; }
+  if (!argv) {
+    if (c.optional) { log(`  ⓘ ${tag} not available on ${process.platform} (optional; the CLI is the primary interface)`); return; }
+    log(`  ! ${tag} missing — no automatic installer on ${process.platform}; install manually${url}`); return;
+  }
   const pm = argv[0];
   if (!hasCmd(pm)) { log(`  ! ${tag}: '${pm}' not available — install ${pm} first (run without --no-deps to bootstrap it) or install manually${url}`); return; }
   log(`  → installing ${tag}: ${argv.join(" ")}`);

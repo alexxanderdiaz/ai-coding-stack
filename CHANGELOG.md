@@ -6,6 +6,10 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-05-31
+### Fixed
+- **`project-init` STATE.md double period (in-tool scaffolder):** 0.2.9 fixed the root `project-init.js`, but the bundled in-tool scaffolder (`skills/project-init/project-init.js`) — the one that actually runs when you say "project-init" inside a tool — had the same bug. Trailing dots in `--about` now stripped there too.
+
 ## [0.2.9] - 2026-05-31
 ### Fixed
 - **Codex experts left no trace in the project:** Codex installs globally (`~/.codex`), so a project's `.codex/` stayed empty after a successful install and read as a failed setup. `install-experts` now writes a `.codex/README.md` pointer (from all three install paths — bundled, source, generate) explaining the experts live in `~/.codex` and pointing at the `.aics-experts.json` manifest.

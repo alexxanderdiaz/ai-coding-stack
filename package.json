@@ -1,6 +1,6 @@
 {
   "name": "ai-coding-stack",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Portable toolkit for AI coding tools (Claude Code, Codex, Antigravity, opencode, Cursor, Windsurf): a first-run wizard installs them + configures Context7 MCP + the in-tool project-init command, and scaffolds any project with cross-tool AGENTS.md context and session continuity.",
   "type": "commonjs",
   "bin": {

@@ -70,8 +70,8 @@ try {
 console.log("\nsetup selection:");
 try {
   const out = execFileSync("node", [path.join(ROOT, "setup.js"), "--tools", "claude", "--check-tools"], { encoding: "utf8" });
-  out.includes("== claude ==") ? ok("setup forwards claude") : bad("setup did not forward claude");
-  !out.includes("== antigravity ==") ? ok("setup limits to selection") : bad("setup forwarded extra tools");
+  /Claude Code/.test(out) ? ok("setup forwards claude") : bad("setup did not forward claude");
+  !/Antigravity/.test(out) ? ok("setup limits to selection") : bad("setup forwarded extra tools");
 } catch (e) { bad("setup --tools threw: " + e.message); }
 
 // 4b. catalog integrity: parses, ids unique, spec files exist, kinds valid

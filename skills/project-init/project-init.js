@@ -127,7 +127,7 @@ ${cmdLines}
   // Seed STATE.md (continuity log) if missing.
   const st = path.join(dir, "STATE.md");
   if (!fs.existsSync(st)) {
-    fs.writeFileSync(st, `# STATE — ${pname}\n> Continuity log. When you return, type **catchup** and the agent reads this + git and brings you up to speed.\n\n## Current state\nProject just started${ABOUT ? ": " + ABOUT : ""}.\n\n## Done\n-\n\n## In progress\n-\n\n## Next\n-\n\n## Decisions / key context\n-\n\n## Open threads / questions\n-\n\n---\nUpdate this at the end of each work block.\n`);
+    fs.writeFileSync(st, `# STATE — ${pname}\n> Continuity log. When you return, type **catchup** and the agent reads this + git and brings you up to speed.\n\n## Current state\nProject just started${ABOUT ? ": " + ABOUT.replace(/\s*\.*\s*$/, "") : ""}.\n\n## Done\n-\n\n## In progress\n-\n\n## Next\n-\n\n## Decisions / key context\n-\n\n## Open threads / questions\n-\n\n---\nUpdate this at the end of each work block.\n`);
     console.log(">> STATE.md (continuity log) written");
   }
   if (stackList.length) console.log(`>> Detected stack: ${stackList.join(", ")} | commands: ${Object.keys(det.commands).join(",") || "none"}`);

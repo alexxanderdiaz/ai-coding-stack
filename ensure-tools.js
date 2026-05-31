@@ -205,10 +205,20 @@ function ensureTool(tool) {
   for (const kind of ["gui", "cli"]) if (REG[tool][kind]) ensureComponent(tool, kind);
 }
 
-const positional = ARGV.filter(a => !a.startsWith("--"));
-let tools = positional.flatMap(a => a.split(",")).map(s => s.trim()).filter(Boolean);
-if (!tools.length || tools.includes("all")) tools = Object.keys(REG);  // "all" or empty -> full set
-tools = [...new Set(tools)];
-log(`ensure-tools (${process.platform}) — ${CHECK ? "CHECK only" : "install missing"}`);
-ensurePrereqs(tools);
-for (const t of tools) ensureTool(t);
+// True if any defined component of the tool is detected on this machine.
+function isInstalled(tool) {
+  const t = REG[tool]; if (!t) return false;
+  return ["gui", "cli"].some(kind => t[kind] && t[kind].detect());
+}
+
+module.exports = { REG, ensureTool, ensurePrereqs, isInstalled, ALL_TOOLS: Object.keys(REG) };
+
+if (require.main === module) {
+  const positional = ARGV.filter(a => !a.startsWith("--"));
+  let tools = positional.flatMap(a => a.split(",")).map(s => s.trim()).filter(Boolean);
+  if (!tools.length || tools.includes("all")) tools = Object.keys(REG);  // "all" or empty -> full set
+  tools = [...new Set(tools)];
+  log(`ensure-tools (${process.platform}) — ${CHECK ? "CHECK only" : "install missing"}`);
+  ensurePrereqs(tools);
+  for (const t of tools) ensureTool(t);
+}

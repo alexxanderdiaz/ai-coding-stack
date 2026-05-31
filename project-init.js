@@ -27,7 +27,7 @@ function isoDate() { const d = new Date(); const p = (n) => String(n).padStart(2
 function main() {
   const pname = path.basename(dir);
   const det = detectStack(dir);
-  const stackList = [...det.languages, ...det.frameworks];
+  const stackList = [...new Set([...det.languages, ...det.frameworks])];
   const stack = stackList.length ? stackList.join(", ") : "(stack not recognized yet)";
   const cmdLines = Object.entries(det.commands).map(([k, v]) => `- **${k}:** \`${v}\``).join("\n")
     || "<!-- No commands detected; define real build/test/lint commands here -->";

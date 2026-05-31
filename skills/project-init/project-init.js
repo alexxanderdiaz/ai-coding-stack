@@ -23,6 +23,22 @@ const dir = ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--about"
 const has = (f) => { try { return fs.existsSync(path.join(dir, f)); } catch { return false; } };
 const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return null; } };
 const readText = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8"); } catch { return ""; } };
+// True if any file ending in one of `exts` exists within `maxDepth` levels (skips dot/vendor dirs).
+const hasExt = (exts, maxDepth) => {
+  const skip = new Set(["node_modules", ".git", ".terraform", "vendor", "dist", "build"]);
+  let found = false;
+  const walk = (d, depth) => {
+    if (found || depth > maxDepth) return;
+    let es; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of es) {
+      if (found) return;
+      if (e.isFile()) { if (exts.some((x) => e.name.endsWith(x))) found = true; }
+      else if (e.isDirectory() && !e.name.startsWith(".") && !skip.has(e.name)) walk(path.join(d, e.name), depth + 1);
+    }
+  };
+  walk(dir, 0);
+  return found;
+};
 
 function detect() {
   const langs = new Set(), fw = new Set(), cmds = {};
@@ -46,7 +62,8 @@ function detect() {
   if (has("pom.xml")) { langs.add("Java"); cmds.build = "mvn package"; cmds.test = "mvn test"; }
   else if (has("build.gradle") || has("build.gradle.kts")) { langs.add(has("build.gradle.kts") ? "Kotlin" : "Java"); cmds.build = "./gradlew build"; cmds.test = "./gradlew test"; }
   if (has("Dockerfile") || has("docker-compose.yml")) fw.add("Docker");
-  if (has("main.tf") || has("terraform")) fw.add("Terraform");
+  if (hasExt([".tf"], 3)) { langs.add("Terraform"); fw.add("Terraform"); cmds.build = cmds.build || "terraform init"; cmds.test = cmds.test || "terraform validate"; cmds.lint = cmds.lint || "terraform fmt -check -recursive"; cmds.dev = cmds.dev || "terraform plan"; }
+  if (hasExt([".bicep"], 3)) { langs.add("Bicep"); fw.add("Bicep (Azure)"); cmds.build = cmds.build || "az bicep build --file main.bicep"; cmds.lint = cmds.lint || "az bicep lint --file main.bicep"; }
   return { languages: [...langs], frameworks: [...fw], commands: cmds, isEmpty: langs.size === 0 };
 }
 
@@ -55,7 +72,7 @@ function isoDate() { const d = new Date(); const p = n => String(n).padStart(2, 
 function main() {
   const pname = path.basename(path.resolve(dir));
   const det = detect();
-  const stackList = [...det.languages, ...det.frameworks];
+  const stackList = [...new Set([...det.languages, ...det.frameworks])];
   const stack = stackList.length ? stackList.join(", ") : "(sin stack reconocido)";
   const cmdLines = Object.entries(det.commands).map(([k, v]) => `- **${k}:** \`${v}\``).join("\n")
     || "<!-- No se detectaron comandos; define build/test/lint reales del repo -->";

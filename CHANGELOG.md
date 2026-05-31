@@ -6,6 +6,10 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-05-31
+### Fixed
+- **Layer-2 live skill discovery was fully broken:** `fetch-source` aborted the entire source clone if it contained *any* symlink (e.g. antigravity-awesome-skills has 7), so domain-specific discovery never ran. Fetch now warns and continues; symlinks are still rejected per-picked-item at install time (where files are actually copied).
+
 ## [0.2.7] - 2026-05-31
 ### Fixed
 - In-tool `project-init` generated AGENTS.md/STATE.md with **Spanish** section headers in the public (English) repo — the bundled scaffolder template is now fully English.
@@ -119,7 +123,8 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.4...v0.2.5

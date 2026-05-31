@@ -84,6 +84,17 @@ function doUpdate(projectDir, tools) {
     for (const tool of useTools) {
       const t = TOOLS[tool]; if (!t) continue;
       if (item.type === "skill") {
+        if (t.renderSkill) {  // single-file rule tools (cursor/windsurf): SKILL.md -> one rule file
+          const sp = parseSpec(fs.readFileSync(path.join(item.dir, "SKILL.md"), "utf8"));
+          if (!sp.meta.id) sp.meta.id = rec.id; sp.meta.kind = "skill";
+          const { subpath, content } = renderExpert(sp, tool);
+          const dest = safeJoin(baseDir(tool, projectDir), subpath);
+          if (PREVIEW) { console.log(`  would refresh [${tool}] ${subpath}`); continue; }
+          rejectSymlinks(item.dir);
+          fs.mkdirSync(path.dirname(dest), { recursive:true }); fs.writeFileSync(dest, content);
+          console.log(`  ~ [${tool}] ${subpath}`);
+          continue;
+        }
         const destDir = safeJoin(baseDir(tool, projectDir), t.skillSub(rec.id).replace(/\/SKILL\.md$/,""));
         if (PREVIEW) { console.log(`  would refresh [${tool}] ${rec.id}/`); continue; }
         rejectSymlinks(item.dir);
@@ -126,6 +137,17 @@ function installFromSource(projectDir, tools) {
     for (const tool of tools) {
       const t = TOOLS[tool]; if (!t) continue;
       if (item.type === "skill") {
+        if (t.renderSkill) {  // single-file rule tools (cursor/windsurf): SKILL.md -> one rule file
+          const sp = parseSpec(fs.readFileSync(path.join(item.dir, "SKILL.md"), "utf8"));
+          if (!sp.meta.id) sp.meta.id = name; sp.meta.kind = "skill";
+          const { subpath, content } = renderExpert(sp, tool);
+          const dest = safeJoin(baseDir(tool, projectDir), subpath);
+          if (PREVIEW) { console.log(`  would write [${tool}] ${subpath}`); continue; }
+          rejectSymlinks(item.dir);
+          fs.mkdirSync(path.dirname(dest), { recursive:true }); fs.writeFileSync(dest, content);
+          installedTools.push(tool); console.log(`  + [${tool}] ${subpath}`);
+          continue;
+        }
         const destDir = safeJoin(baseDir(tool, projectDir), t.skillSub(name).replace(/\/SKILL\.md$/,""));
         if (PREVIEW) { console.log(`  would copy [${tool}] ${name}/ (skill dir)`); continue; }
         rejectSymlinks(item.dir);

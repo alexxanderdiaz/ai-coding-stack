@@ -23,7 +23,8 @@ function run(script, args = []) {
   catch { console.error(`  ${script} exited with error.`); }
 }
 
-const TOOL_NAMES = { "1": "claude", "2": "codex", "3": "antigravity" };
+const TOOL_NAMES = { "1": "claude", "2": "codex", "3": "antigravity", "4": "opencode", "5": "cursor", "6": "windsurf" };
+const ALL_TOOLS = ["claude", "codex", "antigravity", "opencode", "cursor", "windsurf"];
 
 function parseToolList() {
   const i = ARGV.indexOf("--tools");
@@ -34,12 +35,12 @@ function parseToolList() {
 }
 function numbersToTools(answer) {
   const a = answer.trim();
-  if (!a || a.toLowerCase() === "all" || a === "4") return "all";
+  if (!a || a.toLowerCase() === "all") return "all";
   const keys = a.split(",").map(s => TOOL_NAMES[s.trim()] || s.trim()).filter(Boolean);
   return keys.length ? [...new Set(keys)].join(",") : "all";
 }
 function selectedKeys(list) {
-  return (list === "all" ? ["claude", "codex", "antigravity"] : list.split(",")).map(s => s.trim());
+  return (list === "all" ? ALL_TOOLS : list.split(",")).map(s => s.trim());
 }
 
 function doTools(list) {
@@ -53,6 +54,9 @@ function authNotes(list) {
     claude: "  • Claude Code : run `claude` → `/login`",
     codex: "  • Codex       : run `codex login`",
     antigravity: "  • Antigravity : open the app → sign in with Google",
+    opencode: "  • opencode    : run `opencode auth login`",
+    cursor: "  • Cursor      : open the app → sign in",
+    windsurf: "  • Windsurf    : open the app → sign in",
   };
   console.log("\nNext — authenticate each tool with YOUR account:");
   for (const k of keys) if (lines[k]) console.log(lines[k]);
@@ -84,7 +88,7 @@ else {
   rl.question("Option [1-3]: ", (a) => {
     const choice = { "1": "tools", "2": "init", "3": "all" }[a.trim()] || "tools";
     if (choice === "init") { rl.close(); dispatch("init"); return; }
-    console.log("\nWhich tools? (comma list, or 'all')\n  1) Claude Code   2) Codex   3) Antigravity\n  e.g. \"1,3\" or \"all\"");
+    console.log("\nWhich tools? (comma list, or 'all')\n  1) Claude Code   2) Codex   3) Antigravity\n  4) opencode      5) Cursor  6) Windsurf\n  e.g. \"1,3\" or \"all\"");
     rl.question("Tools: ", (t) => { rl.close(); dispatch(choice, numbersToTools(t)); });
   });
 }

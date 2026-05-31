@@ -8,6 +8,9 @@
  *   node ensure-tools.js claude        # ensure Claude GUI + CLI
  *   node ensure-tools.js codex
  *   node ensure-tools.js antigravity
+ *   node ensure-tools.js opencode      # CLI only
+ *   node ensure-tools.js cursor        # GUI only
+ *   node ensure-tools.js windsurf      # GUI only
  *   node ensure-tools.js all
  *   node ensure-tools.js claude,codex   # a subset (comma list)
  *   node ensure-tools.js <tool> --check   # detect only, install nothing
@@ -80,6 +83,33 @@ const REG = {
       linux: null,
     },
   },
+  // opencode (SST) — CLI only. npm pkg `opencode-ai`, binary `opencode`. No verified winget.
+  opencode: {
+    cli: {
+      detect: () => hasCmd("opencode"),
+      win32: ["npm", "install", "-g", "opencode-ai"],
+      darwin: ["npm", "install", "-g", "opencode-ai"],
+      linux: ["npm", "install", "-g", "opencode-ai"],
+    },
+  },
+  // Cursor (Anysphere) — GUI IDE. `which cursor` is unreliable (opt-in shell cmd) → detect app bundle / winget.
+  cursor: {
+    gui: {
+      detect: () => process.platform === "win32" ? wingetHas("Anysphere.Cursor") : process.platform === "darwin" ? macApp("Cursor.app") : false,
+      win32: ["winget", "install", "--id", "Anysphere.Cursor", "-e", "--silent", "--accept-source-agreements", "--accept-package-agreements"],
+      darwin: ["brew", "install", "--cask", "cursor"],
+      linux: null,
+    },
+  },
+  // Windsurf (Codeium) — GUI IDE. Detect app bundle / winget (CLI is opt-in, like VS Code's `code`).
+  windsurf: {
+    gui: {
+      detect: () => process.platform === "win32" ? wingetHas("Codeium.Windsurf") : process.platform === "darwin" ? macApp("Windsurf.app") : false,
+      win32: ["winget", "install", "--id", "Codeium.Windsurf", "-e", "--silent", "--accept-source-agreements", "--accept-package-agreements"],
+      darwin: ["brew", "install", "--cask", "windsurf"],
+      linux: null,
+    },
+  },
 };
 
 function ensureComponent(tool, kind) {
@@ -99,10 +129,10 @@ function ensureComponent(tool, kind) {
 }
 
 function ensureTool(tool) {
-  if (!REG[tool]) { log(`tool desconocido: ${tool} (claude|codex|antigravity|all)`); return; }
+  if (!REG[tool]) { log(`tool desconocido: ${tool} (${Object.keys(REG).join("|")}|all)`); return; }
   log(`== ${tool} ==`);
-  ensureComponent(tool, "gui");
-  ensureComponent(tool, "cli");
+  // Only process components this tool actually defines (some are CLI-only or GUI-only).
+  for (const kind of ["gui", "cli"]) if (REG[tool][kind]) ensureComponent(tool, kind);
 }
 
 const positional = ARGV.filter(a => !a.startsWith("--"));

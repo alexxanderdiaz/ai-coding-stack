@@ -55,7 +55,7 @@ flowchart LR
 
 ## Stack detection (lib/detect-stack.js)
 
-Reads `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml` / Gradle / Docker / Terraform → `{ languages, frameworks, commands{build,test,lint,dev}, suggestedProfile, isEmpty }`. Drives the real commands written into the context files.
+Reads `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml` / Gradle / Docker, plus IaC & scripts — **Terraform** (`*.tf` anywhere in the tree, incl. `modules/`/`environments/`), **Azure Bicep** (`*.bicep`), **Shell** (`*.sh`), and **Azure CLI / azd** (`azure.yaml` / `.azure/`) — → `{ languages, frameworks, commands{build,test,lint,dev}, suggestedProfile, isEmpty }`. Drives the real commands written into the context files (e.g. `terraform init/validate/fmt/plan`, `az bicep build/lint`, `shellcheck`).
 
 ## Expert discovery & MCP propagation (3 layers + env-interpolated MCP)
 

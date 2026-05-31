@@ -11,11 +11,12 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`.
 1. **Detect** → shows which tools are already installed (`✓`) vs missing.
 2. **Select** → arrow-key list, all preselected (space toggles). It installs the missing ones *and* applies config to the ones already installed.
 3. **Prerequisite bootstrap** → installs Node.js/npm if missing (apt/dnf/pacman/zypper/apk · Homebrew · winget). Skip with `--no-deps`.
-4. **Install + configure** → installs each missing tool, then writes the ready-to-use **Context7 MCP** config for opencode/Cursor/Windsurf (Claude gets a `claude mcp add` one-liner; set `CONTEXT7_API_KEY` in your env so it resolves). Tools with no auto-installer on your OS (GUI IDEs on Linux) print a download URL.
+4. **Install + configure** → installs each missing tool, writes the ready-to-use **Context7 MCP** config for opencode/Cursor/Windsurf (Claude gets a `claude mcp add` one-liner; set `CONTEXT7_API_KEY` in your env so it resolves), and installs the **`project-init` command into each compatible tool** (Claude/opencode/Codex/Antigravity) so it's available in-session. Tools with no auto-installer on your OS (GUI IDEs on Linux) print a download URL.
 5. **Existing config** → if a selected tool already has MCP servers, the wizard asks once: **merge** (keep yours, add Context7) or **fresh + backup** (`.bak` then clean write).
 6. **Authenticate** (your own accounts) — printed at the end.
+7. **Scaffold now?** → optional prompt (default No) to run `project-init` on the current folder right away.
 
-> Per-project context (`AGENTS.md`…) is a **separate later step**: `node setup.js --init`.
+> Per-project context (`AGENTS.md`…) also runs anytime: say **“project-init”** inside a tool, or `node setup.js --init`.
 
 Non-interactive (same install+configure, no prompts):
 ```bash

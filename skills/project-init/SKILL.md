@@ -8,6 +8,17 @@ allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*), Bash(git:*), Bash(gh:*)
 
 Configure the current project directory. `AGENTS.md` is the cross-tool context file (read by Claude Code, Codex, Antigravity, Cursor, opencode, Windsurf); `GEMINI.md` holds Antigravity-specific overrides.
 
+## Run once, not per tool
+- Run project-init **once**, from any one tool — it writes for ALL of them in a single pass
+  (`AGENTS.md` + `CLAUDE.md` + experts to `.claude`/`.opencode`/`~/.codex`). Do NOT re-run it
+  from each tool.
+- **Prerequisite = tools installed**, not authenticated. Auth (logging into Codex/opencode) is only
+  needed to *use* the agent later, not to scaffold. Detect what's installed:
+  `node "<repo>/ensure-tools.js" all --check`.
+- **Codex is global** (`scope:"global"` → `~/.codex`). A project's `.codex/` stays (almost) empty by
+  design — install-experts leaves a `.codex/README.md` pointer so that's not mistaken for a failure.
+  The manifest `.aics-experts.json` records which experts went to codex.
+
 ## Flow
 
 1. **Confirm the dir.** It's the project cwd. If it's `~` or a tool config dir, WARN before continuing.

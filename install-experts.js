@@ -3,7 +3,8 @@
  * install-experts — render catalog experts to each selected tool's native format
  * and write them into the right location. Bundled specs only (no network).
  * Targets: claude -> <projectDir>/.claude ; antigravity -> <projectDir>/.agent ;
- *          codex -> <os.homedir()>/.codex (global; documented).
+ *          codex -> <os.homedir()>/.codex (global; a .codex/README.md pointer is left
+ *          in the project so the empty project .codex/ is not mistaken for a failure).
  * Approval gate: nothing is written unless --yes is passed (otherwise preview only).
  * Usage:
  *   node install-experts.js [dir] --tools claude,codex --experts id1,id2 [--dry-run] [--yes] [--force]
@@ -55,6 +56,31 @@ function flagVal(name){ const i=ARGV.indexOf(name); return (i>=0 && ARGV[i+1] &&
 function readManifest(projectDir){ try { return JSON.parse(fs.readFileSync(path.join(projectDir,".aics-experts.json"),"utf8")); } catch { return { version:1, experts:[] }; } }
 function writeManifest(projectDir, man){ fs.writeFileSync(path.join(projectDir,".aics-experts.json"), JSON.stringify(man,null,2)+"\n"); }
 function upsertManifest(man, rec){ man.experts = (man.experts||[]).filter(e => e.id!==rec.id); man.experts.push(rec); return man; }
+
+// Codex resolves experts from GLOBAL ~/.codex (scope:"global"), so a project's .codex/
+// stays empty even after a successful install. Leave a pointer so that's not mistaken
+// for a failed/empty setup. Idempotent (skipped if present unless --force).
+function writeCodexPointer(projectDir, tools) {
+  if (!tools.includes("codex")) return;
+  if (PREVIEW) { console.log("  would write [codex] .codex/README.md (pointer -> ~/.codex global)"); return; }
+  const f = path.join(projectDir, ".codex", "README.md");
+  if (fs.existsSync(f) && !FORCE) return;
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, [
+    "# Codex experts — global",
+    "",
+    "Codex resuelve skills/agents desde `~/.codex` (global, afecta toda la máquina), no desde",
+    "este directorio. Por eso `.codex/` del proyecto está (casi) vacío — **no es un error**.",
+    "",
+    "- Experts de este proyecto: ver `../.aics-experts.json` (entradas con `\"codex\"` en `tools`).",
+    "- Ubicación real: `~/.codex/skills/<id>/SKILL.md` y `~/.codex/agents/<id>.toml`.",
+    "- Refrescar: `node install-experts.js . --update --tools codex`.",
+    "",
+    "Generado por install-experts.",
+    "",
+  ].join("\n"));
+  console.log("  + [codex] .codex/README.md (pointer -> ~/.codex global)");
+}
 
 function sourcePathMap() {
   const raw = flagVal("--source-path-map"); const m = {};
@@ -171,6 +197,7 @@ function installFromSource(projectDir, tools) {
       upsertManifest(man, { id:name, type:item.type, source:sourceId, sourcePath:path.relative(sourcePath, item.dir||item.file), ref, installedAt:new Date().toISOString(), tools:installedTools, layout });
     }
   }
+  writeCodexPointer(projectDir, tools);
   if (!PREVIEW) writeManifest(projectDir, man);
   if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
 }
@@ -200,6 +227,7 @@ function doGenerate(projectDir, tools) {
     upsertManifest(man, { id, type: spec.meta.kind, source: "generated", sourcePath: "(authored)", ref: "local", installedAt: new Date().toISOString(), tools: installedTools, layout: "generated" });
     writeManifest(projectDir, man);
   }
+  writeCodexPointer(projectDir, tools);
   if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
 }
 
@@ -234,6 +262,7 @@ function main() {
       console.log(`  + [${tool}] ${where}/${subpath}`);
     }
   }
+  writeCodexPointer(projectDir, tools);
   if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write the files above.");
   else if (!PREVIEW) console.log("Done. Review the generated files before relying on them.");
 }

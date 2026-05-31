@@ -12,7 +12,6 @@
  *   (pass --about "..." to seed the project goal)
  */
 const path = require("path");
-const readline = require("readline");
 const { execFileSync } = require("child_process");
 
 const HERE = __dirname;
@@ -23,7 +22,6 @@ function run(script, args = []) {
   catch { console.error(`  ${script} exited with error.`); }
 }
 
-const TOOL_NAMES = { "1": "claude", "2": "codex", "3": "antigravity", "4": "opencode", "5": "cursor", "6": "windsurf" };
 const ALL_TOOLS = ["claude", "codex", "antigravity", "opencode", "cursor", "windsurf"];
 
 function parseToolList() {
@@ -32,12 +30,6 @@ function parseToolList() {
   const v = ARGV[i + 1];
   if (!v || v.startsWith("--")) { console.warn('  --tools needs a value (e.g. --tools claude,codex); defaulting to "all".'); return "all"; }
   return v;
-}
-function numbersToTools(answer) {
-  const a = answer.trim();
-  if (!a || a.toLowerCase() === "all") return "all";
-  const keys = a.split(",").map(s => TOOL_NAMES[s.trim()] || s.trim()).filter(Boolean);
-  return keys.length ? [...new Set(keys)].join(",") : "all";
 }
 function selectedKeys(list) {
   return (list === "all" ? ALL_TOOLS : list.split(",")).map(s => s.trim());
@@ -83,28 +75,23 @@ if (ARGV.includes("--tools")) dispatch("tools", parseToolList());
 else if (ARGV.includes("--init")) dispatch("init");
 else if (ARGV.includes("--all")) dispatch("all", parseToolList());
 else {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  console.log([
-    "",
-    "ai-coding-stack — set up AI coding agents and your projects",
-    "",
-    "  1) Install AI coding tools   detect & install the agents below (auto-installs Node.js/Homebrew if missing).",
-    "                               Touches your machine, not your project. You sign in to each afterwards.",
-    "  2) Scaffold this project     write AGENTS.md + CLAUDE.md/GEMINI.md + STATE.md in the CURRENT folder so any",
-    "                               agent understands the project from the first prompt. Installs nothing.",
-    "  3) Both                      install the tools, then scaffold the current folder.",
-    "",
-  ].join("\n"));
-  rl.question("Option [1-3]: ", (a) => {
-    const choice = { "1": "tools", "2": "init", "3": "all" }[a.trim()] || "tools";
-    if (choice === "init") { rl.close(); dispatch("init"); return; }
-    console.log([
-      "",
-      "Which tools? (comma list, or 'all')",
-      "  1) Claude Code (CLI+app)   2) Codex (CLI)        3) Antigravity (IDE)",
-      "  4) opencode (CLI)          5) Cursor (IDE)       6) Windsurf (IDE)",
-      '  e.g. "1,4" or "all"',
-    ].join("\n"));
-    rl.question("Tools: ", (t) => { rl.close(); dispatch(choice, numbersToTools(t)); });
-  });
+  const { selectOne, selectMany } = require(path.join(HERE, "lib", "tui.js"));
+  (async () => {
+    const choice = await selectOne("ai-coding-stack — what do you want to do?", [
+      { label: "Install AI coding tools", value: "tools", hint: "detect & install agents (auto-installs Node.js/Homebrew if missing)" },
+      { label: "Scaffold this project", value: "init", hint: "write AGENTS.md/CLAUDE.md/GEMINI.md/STATE.md in this folder" },
+      { label: "Both", value: "all", hint: "install tools, then scaffold this folder" },
+    ]);
+    if (choice === "init") { dispatch("init"); return; }
+    const picked = await selectMany("Which tools to install?", [
+      { label: "Claude Code", value: "claude", hint: "CLI + app" },
+      { label: "Codex", value: "codex", hint: "CLI" },
+      { label: "Antigravity", value: "antigravity", hint: "IDE" },
+      { label: "opencode", value: "opencode", hint: "CLI" },
+      { label: "Cursor", value: "cursor", hint: "IDE" },
+      { label: "Windsurf", value: "windsurf", hint: "IDE" },
+    ]);
+    const list = picked.length === ALL_TOOLS.length ? "all" : (picked.join(",") || "all");
+    dispatch(choice, list);
+  })();
 }

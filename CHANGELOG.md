@@ -6,6 +6,12 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-31
+### Added
+- Visible **"All tools"** row in the multi-select (toggle with space/enter; `0`/`all` in the numbered fallback).
+### Changed
+- Wizard prints a clear **"✓ Setup complete"** line at the end (and on the scaffold "No" path), so it's obvious the install/config already finished.
+
 ## [0.2.0] - 2026-05-30
 ### Added
 - **First-run wizard** (`node setup.js`, no flags): detects which tools are installed, then in one
@@ -78,7 +84,8 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/alexxanderdiaz/ai-coding-stack/releases/tag/v0.1.1
 [0.1.0]: https://github.com/alexxanderdiaz/ai-coding-stack/releases/tag/v0.1.0

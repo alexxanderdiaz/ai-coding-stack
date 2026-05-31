@@ -1,5 +1,17 @@
 # project-init — generated files & best practices
 
+## Run once, cross-tool
+Run project-init **once**, from any single tool — it writes for ALL of them in one pass
+(`AGENTS.md` + `CLAUDE.md`, plus experts to `.claude` / `.opencode` / `~/.codex`). Do **not**
+re-run it per tool. The prerequisite is that the tools are **installed**
+(`node ensure-tools.js all --check`), **not authenticated** — auth is only needed to *use* an
+agent later, not to scaffold.
+
+**Codex is global.** Codex resolves experts from `~/.codex` (machine-wide), so a project's
+`.codex/` stays (almost) empty after install. That's by design — `install-experts` leaves a
+`.codex/README.md` pointer so the empty dir isn't mistaken for a failed install, and the
+`.aics-experts.json` manifest records which experts went to Codex.
+
 One run writes four files at the project root:
 
 | File | For | Content |

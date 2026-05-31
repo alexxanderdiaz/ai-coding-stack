@@ -148,10 +148,11 @@ async function wizard() {
 
   // Optional: scaffold the current folder now (project-init). Default No (safe in non-TTY).
   const scaffold = await selectOne(`Scaffold the current folder as a project now?  (${process.cwd()})`, [
-    { label: "No", value: false, hint: "later: say “project-init” in a tool, or `node setup.js --init`" },
+    { label: "No", value: false, hint: "all set — say “project-init” in a tool later, or `node setup.js --init`" },
     { label: "Yes", value: true, hint: "run project-init here now (AGENTS.md + experts)" },
   ]);
   if (scaffold) run("project-init.js", ["."].concat(passInit()));
+  console.log("\n✓ Setup complete — tools installed/configured and the project-init command is available in them.");
 }
 
 if (ARGV.includes("--tools")) { const keys = selectedKeys(parseToolList()); setupTools(keys, { fresh: ARGV.includes("--fresh") }); authNotes(keys); }

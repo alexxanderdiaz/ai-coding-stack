@@ -6,6 +6,10 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-05-31
+### Changed
+- Docs (README + ARCHITECTURE) now list the stack-detection coverage: Terraform, Azure Bicep, Shell, and Azure CLI/azd (alongside Node/Python/Go/Rust/Java/Docker), with example commands.
+
 ## [0.2.5] - 2026-05-31
 ### Added
 - `detect-stack` now recognizes **Shell** projects (`*.sh`, with a `shellcheck` lint command) and **Azure CLI / azd** projects (`azure.yaml` / `.azure/`). Script/automation repos are no longer reported as "stack not recognized".
@@ -109,7 +113,8 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.2...v0.2.3

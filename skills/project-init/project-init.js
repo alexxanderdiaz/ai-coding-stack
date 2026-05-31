@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * project-init-agents — self-contained project scaffolder for AGENTS.md tools
- * (Codex, Antigravity, Cursor). No external deps, no ~/.claude requirement.
+ * project-init-agents — self-contained project scaffolder for AI coding tools.
+ * No external deps, no ~/.claude requirement.
  *
- * Detects stack from repo files, writes a tailored AGENTS.md (+ GEMINI.md with
- * --gemini for Antigravity) at the project root with real build/test/lint commands.
- * If the stack is unrecognized, prints a hint to run online skill/agent discovery.
+ * Detects stack from repo files and writes, at the project root: a tailored
+ * AGENTS.md (cross-tool source of truth) + CLAUDE.md (pointer, for Claude Code)
+ * + STATE.md (continuity log); GEMINI.md too with --gemini (Antigravity). Fills
+ * real build/test/lint commands. If the stack is unrecognized, prints a hint to
+ * run online skill/agent discovery.
  *
  * Usage:
  *   node project-init-agents.js [dir] [--gemini] [--force] [--about "..."]
@@ -92,8 +94,10 @@ ${cmdLines}
 - **"wrapup"** (o "cierra sesión"): actualiza \`STATE.md\` COMPLETO (Hecho / En progreso / Siguiente / Decisiones / Hilos abiertos), sugiere commit y confirma. Úsalo antes de cerrar.${foot}`;
 
   const geminiMd = `# ${pname} — Antigravity\n> 📌 **Contexto completo en \`AGENTS.md\` — léelo.** Aquí van SOLO reglas propias de Antigravity (prioridad sobre AGENTS.md).\n\n## Específico de Antigravity\n<!-- Overrides/preferencias SOLO de Antigravity (planning, browser/agent tools). Vacío = hereda de AGENTS.md. -->${foot}`;
+  const claudeMd = `# CLAUDE.md — ${pname}\n> 📌 **El contexto completo del proyecto está en \`AGENTS.md\` — léelo primero** (objetivo, comandos, estructura, patrones, convenciones, continuidad). Fuente única; no dupliques aquí.${foot}`;
 
-  const targets = [["AGENTS.md", body]];
+  // CLAUDE.md (Claude Code) + AGENTS.md (cross-tool source) always; GEMINI.md only with --gemini.
+  const targets = [["AGENTS.md", body], ["CLAUDE.md", claudeMd]];
   if (GEMINI) targets.push(["GEMINI.md", geminiMd]);
 
   for (const [name, content] of targets) {

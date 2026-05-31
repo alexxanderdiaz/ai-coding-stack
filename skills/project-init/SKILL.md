@@ -1,6 +1,6 @@
 ---
 name: project-init
-description: Scaffold the current project for the best AI-coding-agent experience. Use when the user says "project-init", "set up this project", "initialize this project", or opens a new project. Detects the stack, writes AGENTS.md (+ GEMINI.md for Antigravity) with real commands and a STATE.md continuity log; if relevant skills/agents are missing, discovers good ones online (with approval).
+description: Scaffold the current project for the best AI-coding-agent experience. Use when the user says "project-init", "set up this project", "initialize this project", or opens a new project. Detects the stack, writes AGENTS.md (cross-tool source) + CLAUDE.md (pointer for Claude Code) (+ GEMINI.md for Antigravity) with real commands and a STATE.md continuity log; if relevant skills/agents are missing, discovers good ones online (with approval).
 allowed-tools: Bash(node:*), Bash(ls:*), Bash(cat:*), Bash(git:*), Bash(gh:*)
 ---
 

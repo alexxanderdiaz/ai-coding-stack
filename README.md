@@ -4,7 +4,7 @@
 
 **A portable toolkit for AI coding tools — install them, and scaffold any project with cross-tool context + session continuity. Windows · Linux · macOS.**
 
-Works with **Claude Code · Codex · Antigravity** (and any tool that reads `AGENTS.md`).
+Works with **Claude Code · Codex · Antigravity · opencode · Cursor · Windsurf** (and any tool that reads `AGENTS.md`).
 
 ![Platform](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-blue)
 ![Core](https://img.shields.io/badge/core-Node.js-green)
@@ -18,9 +18,9 @@ Works with **Claude Code · Codex · Antigravity** (and any tool that reads `AGE
 
 ## What it does
 
-1. **Installs the tools** — detects and installs the GUI + CLI of Claude Code, Codex, and Antigravity if missing (winget on Windows, brew/npm on macOS/Linux). You authenticate each with your own account.
+1. **Installs the tools** — detects and installs the GUI + CLI of Claude Code, Codex, Antigravity, opencode, Cursor, and Windsurf if missing (winget on Windows, brew/npm on macOS/Linux). You authenticate each with your own account.
 2. **Scaffolds projects** (`project-init`) — auto-detects your stack and writes a lean, best-practice context file set so any AI coding tool understands your project from the first prompt:
-   - `AGENTS.md` — **single source of truth**, cross-tool (Codex, Antigravity, Cursor).
+   - `AGENTS.md` — **single source of truth**, cross-tool (Codex, Antigravity, Cursor, opencode, Windsurf).
    - `CLAUDE.md` — short pointer to AGENTS.md (Claude Code).
    - `GEMINI.md` — Antigravity-specific overrides (pointer to AGENTS.md).
    - `STATE.md` — a **session-continuity log**.
@@ -47,7 +47,7 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 Direct, no menu:
 ```bash
 node setup.js --tools          # install/verify the AI coding tools
-node setup.js --tools claude,codex   # install only a subset
+node setup.js --tools claude,codex,opencode   # install only a subset
 node setup.js --init --about "REST API for recurring billing"   # scaffold cwd
 node setup.js --all            # both
 ```
@@ -55,6 +55,9 @@ node setup.js --all            # both
 Then authenticate (your accounts):
 - **Claude Code:** `claude` → `/login`
 - **Codex:** `codex login`
+- **opencode:** `opencode login`
+- **Cursor:** open the app → sign in
+- **Windsurf:** open the app → sign in
 - **Antigravity:** open the app → sign in with Google
 
 ---
@@ -140,12 +143,16 @@ AICS_RCLONE=myremote:ai-config ./sync/backup.sh   # to your own rclone remote
 [Context7](https://context7.com) injects version-accurate library docs into the agent's context (Next.js, React, Tailwind, etc.), cutting hallucinated/deprecated APIs. It's a hosted MCP server — **bring your own key** (free at context7.com); nothing is stored in this repo.
 
 ```bash
-# get a key at https://context7.com, then register the MCP (key stays local):
-claude mcp add --transport http --scope user context7 \
-  https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: <your-key>"
+# get a key at https://context7.com, then set it in your environment:
+export CONTEXT7_API_KEY="<your-key>"
+
+# propagate Context7 MCP to opencode / Cursor / Windsurf:
+node lib/propagate-mcp.js all
+# or subset:
+node lib/propagate-mcp.js opencode,cursor
 ```
 
-Keep the key in your environment (`CONTEXT7_API_KEY`) or a gitignored file — never commit it.
+The key is read from your environment and written using each tool's native env-interpolation syntax (no plaintext API keys on disk). *(Claude Code registers Context7 separately via `claude mcp add` — see install.js / the section above.)*
 
 ## Components
 
@@ -155,6 +162,7 @@ Keep the key in your environment (`CONTEXT7_API_KEY`) or a gitignored file — n
 | `ensure-tools.js` | Detect + install each tool's GUI & CLI |
 | `project-init.js` | Cross-tool project scaffolder |
 | `lib/detect-stack.js` | Stack + real commands detection |
+| `lib/propagate-mcp.js` | Write Context7 MCP into each tool's config (env-interpolated) |
 | `hooks/state-snapshot.js` | Claude Stop hook → git snapshot in STATE.md |
 | `skills/project-init/` | In-tool `project-init` trigger (Codex/Antigravity) |
 | `catalog/` | Vetted expert catalog + canonical specs |

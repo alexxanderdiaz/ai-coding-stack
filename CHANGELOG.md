@@ -6,8 +6,16 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
-- Tool selection: install any subset of the three tools (`setup.js --tools claude,codex`,
-  menu sub-prompt, `setup.ps1 -Tools`, `ensure-tools.js claude,codex`).
+- **Multi-tool expansion:** opencode (CLI, native SKILL.md support, `npm i -g opencode-ai`),
+  Cursor (GUI IDE, skills → `.cursor/rules/*.mdc`), Windsurf (GUI IDE, agents → `.windsurf/workflows/*.md`,
+  skills → `.windsurf/rules/*.md`). All 6 tools now read `AGENTS.md` natively.
+- **MCP propagation:** `lib/propagate-mcp.js` writes Context7 (and other MCP servers) into each tool's
+  native config using env-interpolation syntax (`{env:VAR}` for opencode/Cursor, `${env:VAR}` for Windsurf),
+  so API keys never touch disk — only environment (`CONTEXT7_API_KEY`).
+- Per-tool skill/agent rendering in `lib/render-expert.js`: opencode/Claude/Codex/Antigravity use native
+  SKILL.md; Cursor/Windsurf map skills → rules; agents → per-tool native format (agents not supported in Cursor).
+- Tool selection: install any subset of the six tools (`setup.js --tools claude,codex,opencode`,
+  menu sub-prompt, `setup.ps1 -Tools`, `ensure-tools.js claude,codex,opencode`).
 - Expert discovery: bundled `catalog/` of skills/agents, `lib/match-experts.js`,
   `lib/render-expert.js`, and `install-experts.js` — render best-fit experts to each
   tool's native format (Claude `.md`, Codex `.toml`, Antigravity workflow) with

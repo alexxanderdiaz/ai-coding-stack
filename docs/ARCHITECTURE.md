@@ -23,9 +23,12 @@ Per-OS, data-driven. Detects the CLI (on PATH) and GUI (winget list / app dir); 
 |------|-----|-----|
 | Claude Code | `Anthropic.Claude` | `Anthropic.ClaudeCode` (`claude`) |
 | Codex | (macOS-first; CLI covers Win/Linux) | `OpenAI.Codex` (`codex`) |
+| opencode | — | `opencode-ai` (`opencode`) |
+| Cursor | `Anysphere.Cursor` / `Cursor.app` | (app-based) |
+| Windsurf | `Codeium.Windsurf` / `Windsurf.app` | (app-based) |
 | Antigravity | `Google.Antigravity` | `Google.AntigravityCLI` (`agy`) |
 
-Windows = winget (verified IDs); macOS = brew/npm; Linux = npm (GUIs: manual note).
+Windows = winget (verified IDs); macOS = brew + app bundle detection; Linux = npm (GUIs: manual note).
 
 ## Context files — single source of truth
 
@@ -36,7 +39,7 @@ flowchart LR
     A --> G["GEMINI.md (pointer + Antigravity overrides)"]
 ```
 
-`AGENTS.md` is the cross-tool standard (Codex, Antigravity v1.20.3+, Cursor). Edit it once → every tool stays in sync. `CLAUDE.md` and `GEMINI.md` are short pointers.
+`AGENTS.md` is the cross-tool standard (Codex, Antigravity v1.20.3+, Cursor, opencode, Windsurf). Edit it once → every tool stays in sync. `CLAUDE.md` and `GEMINI.md` are short pointers.
 
 ## Continuity (context vs progress)
 
@@ -54,9 +57,11 @@ flowchart LR
 
 Reads `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml` / Gradle / Docker / Terraform → `{ languages, frameworks, commands{build,test,lint,dev}, suggestedProfile, isEmpty }`. Drives the real commands written into the context files.
 
-## Expert discovery (3 layers)
+## Expert discovery & MCP propagation (3 layers + env-interpolated MCP)
 
 `project-init` can suggest and install best-fit **skills and agents** for the detected stack + purpose, rendered to each tool's native format. Three layers, quality-first: bundled offline catalog → live trusted sources → generate only for gaps.
+
+`lib/propagate-mcp.js` writes shared MCP servers (e.g., Context7) into each tool's native MCP config using the tool's env-interpolation syntax (`{env:VAR}` for opencode/Cursor, `${env:VAR}` for Windsurf), so API keys live only in the environment, never on disk.
 
 ### Orchestration (install-experts.js)
 
@@ -64,13 +69,16 @@ Reads `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml` / 
 
 `render-expert.js` holds the `TOOLS` map — the single source of truth for where files land and how agents render per tool:
 
-| Tool | Scope | Agent path | Skill path |
-|------|-------|-----------|-----------|
-| Claude Code | project (`.claude`) | `.claude/agents/<id>.md` | `.claude/skills/<id>/SKILL.md` |
-| Codex | **global** (`~/.codex`) | `~/.codex/agents/<id>.toml` | `~/.codex/skills/<id>/SKILL.md` |
-| Antigravity | project (`.agent`) | `.agent/workflows/<id>.md` | `.agent/skills/<id>/SKILL.md` |
+| Tool | Scope | Agent path | Skill path | Notes |
+|------|-------|-----------|-----------|-------|
+| Claude Code | project (`.claude`) | `.claude/agents/<id>.md` | `.claude/skills/<id>/SKILL.md` | Native SKILL.md support |
+| Codex | **global** (`~/.codex`) | `~/.codex/agents/<id>.toml` | `~/.codex/skills/<id>/SKILL.md` | Global (affects all projects) |
+| opencode | project (cwd) | `.agents/<id>.md` | `.skills/<id>/SKILL.md` | Native SKILL.md support |
+| Cursor | project (`.cursor`) | — (no agents) | `.cursor/rules/<id>.mdc` | Skills → rules |
+| Windsurf | project (`.windsurf`) | `.windsurf/workflows/<id>.md` | `.windsurf/rules/<id>.md` | Agents → workflows; skills → rules |
+| Antigravity | project (`.agent`) | `.agent/workflows/<id>.md` | `.agent/skills/<id>/SKILL.md` | — |
 
-Skills render identically across tools (`skills/<id>/SKILL.md`); agents render to each tool's native format. **Codex installs globally (`~/.codex`) — it affects every project on the machine**; the installer warns before writing.
+Skills render identically for tools with SKILL.md concept (Claude, Codex, opencode, Antigravity); Cursor/Windsurf map skills → rules. Agents render to each tool's native format. **Codex installs globally (`~/.codex`) — it affects every project on the machine**; the installer warns before writing.
 
 ```mermaid
 flowchart TD

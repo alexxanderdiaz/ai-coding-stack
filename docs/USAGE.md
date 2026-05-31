@@ -10,13 +10,14 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`. Then authentica
 
 Install only a subset of tools:
 ```bash
-node setup.js --tools claude,codex      # install/verify only Claude Code + Codex
+node setup.js --tools claude,codex,opencode      # install/verify only Claude Code + Codex + opencode
+node setup.js --tools all                        # all 6 tools
 ```
 Interactively, the menu asks **"Which tools?"** after you pick an action:
 ```text
 Which tools? (comma list, or 'all')
-  1) Claude Code   2) Codex   3) Antigravity
-  e.g. "1,3" or "all"
+  1) Claude Code   2) Codex   3) opencode   4) Cursor   5) Windsurf   6) Antigravity
+  e.g. "1,3,5" or "all"
 ```
 Windows:
 ```powershell
@@ -103,3 +104,14 @@ Add to `~/.claude/settings.json`:
   "command": "node \"/ABSOLUTE/PATH/ai-coding-stack/hooks/state-snapshot.js\"" } ] } ] } }
 ```
 It refreshes a git snapshot block in `STATE.md` at session end (idempotent; no-op outside a project with STATE.md + git).
+
+## Propagate Context7 MCP to all tools
+
+If you're using Context7 for library docs, set the API key in your environment and propagate it to each tool's native MCP config:
+```bash
+export CONTEXT7_API_KEY="<your-key>"
+node lib/propagate-mcp.js all        # opencode + Cursor + Windsurf
+node lib/propagate-mcp.js opencode,cursor  # subset
+```
+
+The key is read from the environment and written with each tool's native env-interpolation syntax (no plaintext storage). *(Claude Code registers Context7 separately via `claude mcp add`.)*

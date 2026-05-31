@@ -1,6 +1,6 @@
 {
   "name": "ai-coding-stack",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Portable toolkit for AI coding tools (Claude Code, Codex, Antigravity): install them and scaffold any project with cross-tool AGENTS.md context and session continuity.",
   "type": "commonjs",
   "bin": {

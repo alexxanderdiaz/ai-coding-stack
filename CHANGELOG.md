@@ -5,7 +5,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/); this project
 follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-05-30
 ### Added
+- **First-run wizard** (`node setup.js`, no flags): detects which tools are installed, then in one
+  step installs the missing ones **and** applies the ready-to-use config to every selected tool
+  (new + already-installed) — Context7 MCP + the in-tool `project-init` command. Ends with an
+  optional "scaffold the current folder now?" prompt.
+- **Don't-clobber config:** when a selected tool already has MCP servers, the wizard asks once —
+  **merge** (keep yours, add Context7) or **fresh + backup** (`.bak-<timestamp>` then clean write).
+- **Prerequisite bootstrap:** `ensure-tools.js` auto-installs Node.js/npm if missing
+  (apt/dnf/pacman/zypper/apk · Homebrew · winget) before installing tools; `--no-deps` to skip.
+- **Arrow-key TUI menu** (`lib/tui.js`, zero-dependency): ↑/↓ navigation, space multi-select,
+  colors (`NO_COLOR` aware), with a numbered readline fallback on non-TTY shells.
+- **In-tool `project-init` command:** installed into each compatible tool's global skills dir
+  (Claude/opencode/Codex/Antigravity) during setup, so "project-init" is runnable in-session and
+  scaffolds + configures whatever a project needs. (Cursor/Windsurf use per-project rules.)
 - **Multi-tool expansion:** opencode (CLI, native SKILL.md support, `npm i -g opencode-ai`),
   Cursor (GUI IDE, skills → `.cursor/rules/*.mdc`), Windsurf (GUI IDE, agents → `.windsurf/workflows/*.md`,
   skills → `.windsurf/rules/*.md`). All 6 tools now read `AGENTS.md` natively.
@@ -32,6 +47,15 @@ follows [Semantic Versioning](https://semver.org/).
 - Optional Context7 docs MCP (bring-your-own-key, never stored in repo; provides
   version-accurate library docs for Next.js, React, Tailwind, etc.).
 
+### Changed
+- All setup/log strings are English-only; the menu is more descriptive (per-option
+  explanations, CLI vs IDE labels); manual-install messages now include download URLs.
+- `--tools` / `--all` now also apply config (not just install); added `--fresh`.
+
+### Fixed
+- CLI-first tools (Claude/Codex) no longer print a misleading "GUI missing — install
+  manually" nag on platforms where no desktop app exists; shows a soft info line instead.
+
 ## [0.1.1] - 2026-05-29
 ### Added
 - GitHub Release creation in the `release` workflow (auto-generated notes on tag).
@@ -54,6 +78,7 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/alexxanderdiaz/ai-coding-stack/releases/tag/v0.1.1
 [0.1.0]: https://github.com/alexxanderdiaz/ai-coding-stack/releases/tag/v0.1.0

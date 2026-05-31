@@ -32,7 +32,8 @@ No personal config, no accounts baked in. You bring your own.
 
 ## Prerequisites
 
-- **Git** and **Node.js ≥ 18** (the toolkit runs on Node). `setup.js` will **auto-install Node.js/npm** if missing (apt/dnf/pacman/zypper/apk on Linux, Homebrew on macOS, winget on Windows) — pass `--no-deps` to skip that bootstrap.
+- **Git** — required to clone this repo and used by expert discovery (`project-init`). Install it first: `winget install Git.Git` (Windows) · `brew install git` (macOS) · `sudo apt install git` / your distro (Linux).
+- **Node.js ≥ 18** — the toolkit runs on Node. `setup.js` will **auto-install Node.js/npm** if missing (apt/dnf/pacman/zypper/apk on Linux, Homebrew on macOS, winget on Windows) — pass `--no-deps` to skip that bootstrap.
 - A platform package manager for installing the agents:
   - **Windows** — `winget` (built-in on Win10/11; else install *App Installer*).
   - **macOS** — [Homebrew](https://brew.sh) (setup prints the one-line installer if missing).
@@ -176,13 +177,14 @@ The key is read from your environment and written using each tool's native env-i
 
 | File | Role |
 |------|------|
-| `setup.js` · `setup.sh` · `setup.ps1` | Menu / bootstrap |
-| `ensure-tools.js` | Detect + install each tool's GUI & CLI |
+| `setup.js` · `setup.sh` · `setup.ps1` | First-run wizard / bootstrap |
+| `ensure-tools.js` | Detect + install each tool's GUI & CLI (+ Node/brew prereq bootstrap) |
+| `lib/tui.js` | Zero-dep arrow-key menu (numbered fallback on non-TTY) |
 | `project-init.js` | Cross-tool project scaffolder |
 | `lib/detect-stack.js` | Stack + real commands detection |
 | `lib/propagate-mcp.js` | Write Context7 MCP into each tool's config (env-interpolated) |
 | `hooks/state-snapshot.js` | Claude Stop hook → git snapshot in STATE.md |
-| `skills/project-init/` | In-tool `project-init` trigger (Codex/Antigravity) |
+| `skills/project-init/` | In-tool `project-init` command (installed into tools by setup) |
 | `catalog/` | Vetted expert catalog + canonical specs |
 | `lib/match-experts.js` | Stack + purpose → expert shortlist |
 | `lib/render-expert.js` | Spec → per-tool native format |

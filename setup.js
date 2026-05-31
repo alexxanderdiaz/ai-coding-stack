@@ -16,10 +16,21 @@
  *   (pass --about "..." to seed the project goal; --no-deps to skip Node/brew bootstrap)
  */
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
 const { execFileSync } = require("child_process");
 
 const HERE = __dirname;
 const ARGV = process.argv.slice(2);
+
+// Tools that read GLOBAL skills/commands → where to install the project-init skill
+// so it's available inside the tool on load. (Cursor/Windsurf use per-project rules, no global skill.)
+const GLOBAL_SKILL_DIR = {
+  claude: [".claude", "skills"],
+  opencode: [".config", "opencode", "skills"],
+  codex: [".codex", "skills"],
+  antigravity: [".gemini", "skills"],
+};
 
 const TOOL_META = {
   claude: { label: "Claude Code", hint: "CLI + app" },
@@ -52,7 +63,32 @@ function passInit() {
   return out;
 }
 
-// Install missing tools + apply ready-to-use config (Context7 MCP) to all given tools.
+// Install the bundled project-init skill into each compatible tool's GLOBAL skills dir,
+// so "project-init" is available inside the tool on load. SKILL.md paths are pinned to
+// this repo clone so the in-tool command runs the real scripts (scaffold + expert discovery).
+function installProjectInitSkill(keys) {
+  const src = path.join(HERE, "skills", "project-init");
+  if (!fs.existsSync(src)) return;
+  const skipped = [];
+  for (const t of keys) {
+    const seg = GLOBAL_SKILL_DIR[t];
+    if (!seg) { skipped.push(t); continue; }
+    const dest = path.join(os.homedir(), ...seg, "project-init");
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.rmSync(dest, { recursive: true, force: true });
+    fs.cpSync(src, dest, { recursive: true });
+    const skillMd = path.join(dest, "SKILL.md");
+    if (fs.existsSync(skillMd)) {
+      let txt = fs.readFileSync(skillMd, "utf8");
+      txt = txt.split("<this-skill-dir>").join(dest).split("<repo>").join(HERE);
+      fs.writeFileSync(skillMd, txt);
+    }
+    console.log(`  ✓ project-init available in ${TOOL_META[t].label} → ${dest}`);
+  }
+  if (skipped.length) console.log(`  ⓘ ${skipped.map(t => TOOL_META[t].label).join(", ")}: no global skills — run project-init per project (\`node setup.js --init\`)`);
+}
+
+// Install missing tools + apply ready-to-use config (Context7 MCP) + the in-tool project-init skill.
 function setupTools(keys, opts = {}) {
   const { isInstalled, ensureTool, ensurePrereqs } = require(path.join(HERE, "ensure-tools.js"));
   const { propagate, TARGETS } = require(path.join(HERE, "lib", "propagate-mcp.js"));
@@ -61,6 +97,8 @@ function setupTools(keys, opts = {}) {
     if (!isInstalled(t)) ensureTool(t); else console.log(`  ✓ ${TOOL_META[t].label} already installed`);
     if (TARGETS[t]) propagate(t, { fresh: opts.fresh });
   }
+  console.log("\nInstalling the in-tool project-init command …");
+  installProjectInitSkill(keys);
 }
 function authNotes(keys) {
   const lines = {
@@ -74,7 +112,9 @@ function authNotes(keys) {
   console.log("\nNext — authenticate each tool with YOUR account:");
   for (const k of keys) if (lines[k]) console.log(lines[k]);
   if (!process.env.CONTEXT7_API_KEY) console.log("\n  ⓘ Set CONTEXT7_API_KEY in your environment so the configured Context7 MCP resolves.");
-  console.log("\nFor per-project context later, run:  node setup.js --init   (writes AGENTS.md… in a project folder)\n");
+  console.log("\nPer project: open the tool in a project folder and say “project-init” (or “set up this project”) —");
+  console.log("it scaffolds AGENTS.md and downloads/configures the experts that project needs.");
+  console.log("CLI alternative: `node setup.js --init`\n");
 }
 
 async function wizard() {

@@ -91,10 +91,7 @@ node project-init.js . --about "what the project is"
 Auto-detects `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml` … → real `build`/`test`/`lint` commands. Writes the four files with lean, agents.md-2026 best-practice sections: **Goal · Commands · Structure · Non-obvious patterns · Permissions/boundaries · Conventions · Commits/PR · Continuity**. The agent fills *Structure* and *Non-obvious patterns* by inspecting the repo.
 
 ### Use it from inside a tool (skill)
-Copy `skills/project-init/` into your tool's skills dir, then just say `project-init` / "set up this project" in the chat:
-- **Codex:** `~/.codex/skills/project-init/`
-- **Antigravity:** `~/.gemini/skills/project-init/`
-- **Claude Code:** use `node project-init.js .`, or wire it as a skill in `~/.claude/skills/`.
+The setup wizard **already installs `project-init` as a command** into each compatible tool's global skills dir (Claude `~/.claude/skills/`, opencode `~/.config/opencode/skills/`, Codex `~/.codex/skills/`, Antigravity `~/.gemini/skills/`). So just open the tool in a project folder and say **“project-init”** / “set up this project” — it scaffolds `AGENTS.md` and downloads/configures the experts that project needs. (Cursor/Windsurf use per-project rules, no global command — run `node setup.js --init` there.)
 
 ---
 

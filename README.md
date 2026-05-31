@@ -155,6 +155,11 @@ Either way you finish with **✓ Setup complete** — tools are installed/config
 
 ## project-init in detail
 
+**Run it once, from any one tool — it configures all of them in a single pass** (`AGENTS.md`
++ `CLAUDE.md` + experts to `.claude`/`.opencode`/`~/.codex`). Don't re-run it per tool.
+The prerequisite is that the tools are **installed** (`node ensure-tools.js all --check`), not
+authenticated — auth is only needed to *use* an agent later, not to scaffold.
+
 ```bash
 node project-init.js . --about "what the project is"
 ```
@@ -180,6 +185,9 @@ node install-experts.js . --tools claude,codex --experts api-backend-pro,code-re
 - Rendered per tool: Claude `.claude/agents/*.md`, Codex `~/.codex/agents/*.toml`,
   Antigravity `.agent/workflows/*.md`; skills go to each tool's `skills/` dir.
 - **Claude/Antigravity install project-local; Codex installs globally (`~/.codex`, affects all projects).**
+  A project's `.codex/` therefore stays (almost) empty by design — the installer leaves a
+  `.codex/README.md` pointer so that's not mistaken for a failed install. The `.aics-experts.json`
+  manifest records which experts went to codex.
 - **Writes require `--yes`** (the installer previews otherwise); `--dry-run` previews, `--force` overwrites.
 - Always review generated files before relying on them.
 

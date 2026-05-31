@@ -84,11 +84,27 @@ else if (ARGV.includes("--init")) dispatch("init");
 else if (ARGV.includes("--all")) dispatch("all", parseToolList());
 else {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  console.log("\nai-coding-stack\n  1) Install AI coding tools\n  2) Scaffold this project (project-init)\n  3) Both");
+  console.log([
+    "",
+    "ai-coding-stack — set up AI coding agents and your projects",
+    "",
+    "  1) Install AI coding tools   detect & install the agents below (auto-installs Node.js/Homebrew if missing).",
+    "                               Touches your machine, not your project. You sign in to each afterwards.",
+    "  2) Scaffold this project     write AGENTS.md + CLAUDE.md/GEMINI.md + STATE.md in the CURRENT folder so any",
+    "                               agent understands the project from the first prompt. Installs nothing.",
+    "  3) Both                      install the tools, then scaffold the current folder.",
+    "",
+  ].join("\n"));
   rl.question("Option [1-3]: ", (a) => {
     const choice = { "1": "tools", "2": "init", "3": "all" }[a.trim()] || "tools";
     if (choice === "init") { rl.close(); dispatch("init"); return; }
-    console.log("\nWhich tools? (comma list, or 'all')\n  1) Claude Code   2) Codex   3) Antigravity\n  4) opencode      5) Cursor  6) Windsurf\n  e.g. \"1,3\" or \"all\"");
+    console.log([
+      "",
+      "Which tools? (comma list, or 'all')",
+      "  1) Claude Code (CLI+app)   2) Codex (CLI)        3) Antigravity (IDE)",
+      "  4) opencode (CLI)          5) Cursor (IDE)       6) Windsurf (IDE)",
+      '  e.g. "1,4" or "all"',
+    ].join("\n"));
     rl.question("Tools: ", (t) => { rl.close(); dispatch(choice, numbersToTools(t)); });
   });
 }

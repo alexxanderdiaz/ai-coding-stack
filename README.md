@@ -30,6 +30,27 @@ No personal config, no accounts baked in. You bring your own.
 
 ---
 
+## Prerequisites
+
+- **Git** and **Node.js ≥ 18** (the toolkit runs on Node). `setup.js` will **auto-install Node.js/npm** if missing (apt/dnf/pacman/zypper/apk on Linux, Homebrew on macOS, winget on Windows) — pass `--no-deps` to skip that bootstrap.
+- A platform package manager for installing the agents:
+  - **Windows** — `winget` (built-in on Win10/11; else install *App Installer*).
+  - **macOS** — [Homebrew](https://brew.sh) (setup prints the one-line installer if missing).
+  - **Linux** — your distro's package manager for CLIs. **GUI IDEs (Cursor, Windsurf, Antigravity) have no Linux auto-installer** — setup prints the download URL to install them manually.
+
+What gets installed per OS:
+
+| Tool | Type | Windows | macOS | Linux |
+|------|------|---------|-------|-------|
+| Claude Code | CLI + app | winget | npm + cask | npm (CLI only) |
+| Codex | CLI | winget | npm | npm |
+| opencode | CLI | npm | npm | npm |
+| Antigravity | IDE | winget | cask | manual |
+| Cursor | IDE | winget | cask | manual |
+| Windsurf | IDE | winget | cask | manual |
+
+---
+
 ## Quickstart
 
 ```bash

@@ -6,6 +6,12 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-05-31
+### Fixed
+- The in-tool `project-init` (bundled `skills/project-init/project-init.js`) now writes
+  **CLAUDE.md** (pointer to AGENTS.md) in addition to AGENTS.md + STATE.md — it previously
+  skipped CLAUDE.md, diverging from the root scaffolder and the documented behavior.
+
 ## [0.2.2] - 2026-05-31
 ### Fixed
 - npm package now ships `install-experts.js` and `catalog/` (were missing from `files`),
@@ -95,7 +101,8 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.1.1...v0.2.0

@@ -18,8 +18,8 @@ Works with **Claude Code · Codex · Antigravity · opencode · Cursor · Windsu
 
 ## What it does
 
-1. **Installs the tools** — detects and installs the GUI + CLI of Claude Code, Codex, Antigravity, opencode, Cursor, and Windsurf if missing (winget on Windows, brew/npm on macOS/Linux). You authenticate each with your own account.
-2. **Scaffolds projects** (`project-init`) — auto-detects your stack and writes a lean, best-practice context file set so any AI coding tool understands your project from the first prompt:
+1. **Sets up the tools (first-run wizard)** — `node setup.js` detects which of Claude Code, Codex, Antigravity, opencode, Cursor, Windsurf are installed, then in one step **installs the missing ones and applies the ready-to-use config** (Context7 MCP) to every selected tool — new *and* already-installed. Missing package managers (Node.js/Homebrew) are bootstrapped automatically. If a tool already has MCP config, the wizard asks once: **merge** (keep yours, add Context7) or **fresh + backup** (`.bak`). You authenticate each with your own account afterwards.
+2. **Scaffolds projects** (`project-init`, a separate later step) — auto-detects your stack and writes a lean, best-practice context file set so any AI coding tool understands your project from the first prompt:
    - `AGENTS.md` — **single source of truth**, cross-tool (Codex, Antigravity, Cursor, opencode, Windsurf).
    - `CLAUDE.md` — short pointer to AGENTS.md (Claude Code).
    - `GEMINI.md` — Antigravity-specific overrides (pointer to AGENTS.md).

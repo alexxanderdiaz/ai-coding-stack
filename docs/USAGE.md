@@ -7,37 +7,27 @@ cd ai-coding-stack && ./setup.sh        # → 1) Install tools
 ```
 Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`.
 
-**What the install flow does, step by step:**
-1. **Menu** → choose `1) Install AI coding tools`.
-2. **Pick tools** → enter a comma list (`1,4`) or `all`.
-3. **Prerequisite bootstrap** → if `npm`/Node.js is missing it's installed automatically (apt/dnf/pacman/zypper/apk · Homebrew · winget). Skip with `--no-deps`.
-4. **Install** → each selected tool's CLI/GUI via the OS package manager. Tools with no auto-installer on your OS (GUI IDEs on Linux) print a download URL instead.
-5. **Authenticate** (your own accounts), printed at the end:
-   - Claude Code: `claude` → `/login` · Codex: `codex login` · opencode: `opencode login`
-   - Antigravity: open the app → sign in with Google · Cursor / Windsurf: open the app → sign in
+`node setup.js` (no flags) runs a **first-run wizard**:
+1. **Detect** → shows which tools are already installed (`✓`) vs missing.
+2. **Select** → arrow-key list, all preselected (space toggles). It installs the missing ones *and* applies config to the ones already installed.
+3. **Prerequisite bootstrap** → installs Node.js/npm if missing (apt/dnf/pacman/zypper/apk · Homebrew · winget). Skip with `--no-deps`.
+4. **Install + configure** → installs each missing tool, then writes the ready-to-use **Context7 MCP** config for opencode/Cursor/Windsurf (Claude gets a `claude mcp add` one-liner; set `CONTEXT7_API_KEY` in your env so it resolves). Tools with no auto-installer on your OS (GUI IDEs on Linux) print a download URL.
+5. **Existing config** → if a selected tool already has MCP servers, the wizard asks once: **merge** (keep yours, add Context7) or **fresh + backup** (`.bak` then clean write).
+6. **Authenticate** (your own accounts) — printed at the end.
 
-Install only a subset of tools:
+> Per-project context (`AGENTS.md`…) is a **separate later step**: `node setup.js --init`.
+
+Non-interactive (same install+configure, no prompts):
 ```bash
-node setup.js --tools claude,codex,opencode      # install/verify only these
-node setup.js --tools all                        # all 6 tools
+node setup.js --tools all                        # set up all 6 tools (install + Context7 MCP)
+node setup.js --tools claude,codex,opencode      # only these
+node setup.js --tools all --fresh                # fresh+backup existing MCP config
 node setup.js --tools all --no-deps              # don't auto-install Node.js/Homebrew
+node ensure-tools.js all --check                 # detect only, install nothing
 ```
-Interactively, the menu asks **"Which tools?"** after you pick an action:
-```text
-Which tools? (comma list, or 'all')
-  1) Claude Code (CLI+app)   2) Codex (CLI)        3) Antigravity (IDE)
-  4) opencode (CLI)          5) Cursor (IDE)       6) Windsurf (IDE)
-  e.g. "1,4" or "all"
-```
-Windows:
-```powershell
-.\setup.ps1 -Tools claude,codex
-```
+The interactive wizard uses an **arrow-key menu** (↑/↓ to move, space to toggle, enter to confirm); on a non-TTY shell it falls back to a numbered prompt.
 
-Check only (install nothing):
-```bash
-node ensure-tools.js all --check
-```
+Windows: `.\setup.ps1 -Tools claude,codex`.
 
 ## Scaffold a project
 ```bash

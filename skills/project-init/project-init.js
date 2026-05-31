@@ -64,6 +64,8 @@ function detect() {
   if (has("Dockerfile") || has("docker-compose.yml")) fw.add("Docker");
   if (hasExt([".tf"], 3)) { langs.add("Terraform"); fw.add("Terraform"); cmds.build = cmds.build || "terraform init"; cmds.test = cmds.test || "terraform validate"; cmds.lint = cmds.lint || "terraform fmt -check -recursive"; cmds.dev = cmds.dev || "terraform plan"; }
   if (hasExt([".bicep"], 3)) { langs.add("Bicep"); fw.add("Bicep (Azure)"); cmds.build = cmds.build || "az bicep build --file main.bicep"; cmds.lint = cmds.lint || "az bicep lint --file main.bicep"; }
+  if (has("azure.yaml") || has("azure.yml") || has(".azure")) fw.add("Azure (azd)");
+  if (hasExt([".sh"], 3)) { langs.add("Shell"); cmds.lint = cmds.lint || "find . -name '*.sh' -exec shellcheck {} +"; }
   return { languages: [...langs], frameworks: [...fw], commands: cmds, isEmpty: langs.size === 0 };
 }
 

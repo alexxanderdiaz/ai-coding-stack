@@ -68,7 +68,8 @@ ${cmdLines}
   const claudeMd = `# CLAUDE.md — ${pname}\n> 📌 **Full project context is in \`AGENTS.md\` — read it first** (goal, commands, structure, patterns, conventions, continuity). Single source of truth; don't duplicate here.${foot}`;
   const geminiMd = `# ${pname} — Antigravity\n> 📌 **Full context in \`AGENTS.md\` — read it.** Only Antigravity-specific overrides go here (they take priority over AGENTS.md).\n\n## Antigravity-specific\n<!-- Overrides/preferences only for Antigravity (planning style, browser/agent tools). Empty = inherit from AGENTS.md. -->${foot}`;
   const agentsMd = head(pname) + shared + foot;
-  const stateMd = `# STATE — ${pname}\n> Continuity log. When you return, type **catchup** and the agent reads this + git to get up to speed.\n\n## Current state\nProject just initialized${ABOUT ? ": " + ABOUT : ""}.\n\n## Done\n-\n\n## In progress\n-\n\n## Next\n-\n\n## Decisions / key context\n-\n\n## Open threads / questions\n-\n\n---\nThe agent updates this at the end of each work block (or on "wrapup").\n`;
+  const aboutClean = ABOUT.replace(/\s*\.*\s*$/, "");   // strip trailing dots/space so we don't get ".."
+  const stateMd = `# STATE — ${pname}\n> Continuity log. When you return, type **catchup** and the agent reads this + git to get up to speed.\n\n## Current state\nProject just initialized${aboutClean ? ": " + aboutClean : ""}.\n\n## Done\n-\n\n## In progress\n-\n\n## Next\n-\n\n## Decisions / key context\n-\n\n## Open threads / questions\n-\n\n---\nThe agent updates this at the end of each work block (or on "wrapup").\n`;
 
   const targets = [["AGENTS.md", agentsMd], ["CLAUDE.md", claudeMd], ["GEMINI.md", geminiMd], ["STATE.md", stateMd]];
   for (const [name, content] of targets) {

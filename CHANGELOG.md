@@ -6,6 +6,13 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.9] - 2026-05-31
+### Fixed
+- **Codex experts left no trace in the project:** Codex installs globally (`~/.codex`), so a project's `.codex/` stayed empty after a successful install and read as a failed setup. `install-experts` now writes a `.codex/README.md` pointer (from all three install paths — bundled, source, generate) explaining the experts live in `~/.codex` and pointing at the `.aics-experts.json` manifest.
+- **`project-init` STATE.md double period:** an `--about` value ending in `.` produced `Project just initialized: ...alerts..`. Trailing dots/whitespace are now stripped before composing the line.
+### Changed
+- Docs (`project-init` SKILL.md + README): clarified that `project-init` is **run once, cross-tool** (not per-tool), that the prerequisite is the tools being **installed** (not authenticated), and that **Codex is global by design**.
+
 ## [0.2.8] - 2026-05-31
 ### Fixed
 - **Layer-2 live skill discovery was fully broken:** `fetch-source` aborted the entire source clone if it contained *any* symlink (e.g. antigravity-awesome-skills has 7), so domain-specific discovery never ran. Fetch now warns and continues; symlinks are still rejected per-picked-item at install time (where files are actually copied).

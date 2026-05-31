@@ -54,10 +54,23 @@ What gets installed per OS:
 
 ## Quickstart
 
+### Option A — npm (no clone)
+Run the wizard straight from npm:
+```bash
+npx ai-coding-stack            # runs the first-run wizard
+```
+Or install globally to get the `ai-coding-stack` (wizard) and `aics-init` (scaffold) commands anywhere:
+```bash
+npm install -g ai-coding-stack
+ai-coding-stack                # wizard: detect → install + configure
+aics-init --about "REST API for recurring billing"   # scaffold the current folder
+```
+
+### Option B — git clone
 ```bash
 # Linux / macOS
 git clone https://github.com/alexxanderdiaz/ai-coding-stack.git
-cd ai-coding-stack && ./setup.sh        # menu: install tools / scaffold / both
+cd ai-coding-stack && ./setup.sh
 ```
 ```powershell
 # Windows
@@ -66,13 +79,15 @@ cd ai-coding-stack
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
 
-Direct, no menu:
+### Non-interactive (either install method)
 ```bash
-node setup.js --tools          # install/verify the AI coding tools
-node setup.js --tools claude,codex,opencode   # install only a subset
-node setup.js --init --about "REST API for recurring billing"   # scaffold cwd
-node setup.js --all            # both
+ai-coding-stack --tools all                    # install + configure all tools (no prompts)
+ai-coding-stack --tools claude,codex,opencode  # a subset
+ai-coding-stack --tools all --fresh            # fresh+backup existing MCP config
+ai-coding-stack --tools all --no-deps          # skip Node/Homebrew bootstrap
+aics-init --about "REST API for recurring billing"   # scaffold cwd (or: node setup.js --init)
 ```
+> With a git clone, use `node setup.js …` / `node project-init.js …` instead of the global commands.
 
 Then authenticate (your accounts):
 - **Claude Code:** `claude` → `/login`
@@ -81,6 +96,60 @@ Then authenticate (your accounts):
 - **Cursor:** open the app → sign in
 - **Windsurf:** open the app → sign in
 - **Antigravity:** open the app → sign in with Google
+
+---
+
+## The setup wizard, screen by screen
+
+Run `ai-coding-stack` (or `npx ai-coding-stack` / `node setup.js`) with no flags:
+
+**1. Detection** — lists every tool and whether it's already installed:
+```
+Detected on this machine:
+  ✓ Claude Code
+  · Codex            (not installed)
+  ✓ opencode
+  · Cursor           (not installed)
+  ...
+```
+
+**2. Tool selection** (arrow-key, all preselected):
+```
+Set up which tools? (installs missing + configures all selected)
+ ❯ ◉ All tools
+   ◉ Claude Code   installed — add config
+   ◉ Codex         install + config
+   ◉ opencode      installed — add config
+   ...
+ ↑/↓ move · space toggle · enter confirm
+```
+- **All tools** row toggles everything. `space` toggles one; `enter` confirms.
+- Selecting a tool that's already installed = just add config (no reinstall); a missing one = install + config.
+- Non-TTY (pipes/CI): falls back to a numbered prompt (`0`=all, comma list, or Enter).
+
+**3. Prerequisite bootstrap** — installs Node.js/npm if missing (skip with `--no-deps`).
+
+**4. Install + configure**, per selected tool:
+- installs the CLI/GUI (or prints a download URL where there's no auto-installer),
+- writes **Context7 MCP** config (opencode/Cursor/Windsurf; Claude gets a `claude mcp add` one-liner),
+- installs the **`project-init` command** into the tool (Claude/opencode/Codex/Antigravity).
+
+**5. Existing config** — only if a selected tool already has MCP servers:
+```
+Existing MCP config found for: opencode — how to add Context7?
+ ❯ Merge          keep your servers, add Context7 (non-destructive)
+   Fresh + backup back up to .bak, then write a clean config
+```
+
+**6. Auth notes** — how to sign in to each selected tool.
+
+**7. Scaffold now?** — optional (default **No**):
+```
+Scaffold the current folder as a project now?  (/path/to/cwd)
+ ❯ No    all set — say "project-init" in a tool later, or `node setup.js --init`
+   Yes   run project-init here now (AGENTS.md + experts)
+```
+Either way you finish with **✓ Setup complete** — tools are installed/configured and `project-init` is available inside them.
 
 ---
 

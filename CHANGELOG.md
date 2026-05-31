@@ -6,6 +6,17 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-05-31
+### Fixed
+- npm package now ships `install-experts.js` and `catalog/` (were missing from `files`),
+  so expert discovery / `project-init` work when installed via npm, not only from a git clone.
+### Added
+- README: **Install via npm** (`npx ai-coding-stack` / `npm i -g`) and a **screen-by-screen
+  walkthrough of the setup wizard** (detection, tool selection + "All tools" row, prereq
+  bootstrap, install+configure, merge/fresh-backup, auth, optional scaffold).
+### Changed
+- `package.json` description/keywords updated for the 6-tool + MCP + wizard scope.
+
 ## [0.2.1] - 2026-05-31
 ### Added
 - Visible **"All tools"** row in the multi-select (toggle with space/enter; `0`/`all` in the numbered fallback).
@@ -84,7 +95,8 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/alexxanderdiaz/ai-coding-stack/releases/tag/v0.1.1

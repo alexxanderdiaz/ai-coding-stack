@@ -6,6 +6,7 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **ZAI Code (ZCode, Zhipu GLM) support:** ZAI Code is now a first-class target alongside the other six tools. It reads workspace `AGENTS.md` natively (so `project-init` context works out of the box), and `install-experts` renders skills to `~/.zcode/skills/<id>/SKILL.md` and agents to `~/.zcode/cli/agents/<id>.md` (global scope, like Codex). Detected by `/Applications/ZCode.app` on macOS via `ensure-tools` / `setup`. Skill format verified against the app's own bundled skills; agent format is the standard frontmatter-Markdown convention (review the first one under Settings → Subagents). Kimi (Moonshot) also loads workspace `AGENTS.md` for instructions — no native skill target, so context-only.
 - **`install-experts --list`:** read-only overview of what's installable and what's already in the project — bundled catalog experts, the trusted-source allowlist, and the experts recorded in `.aics-experts.json` (id, source, ref, tools). Narrow with `--catalog`, `--sources`, or `--installed`. Replaces `cat catalog/catalog.json` / `cat .aics-experts.json`.
 
 ### Changed

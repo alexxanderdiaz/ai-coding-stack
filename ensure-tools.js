@@ -105,6 +105,16 @@ const REG = {
       linux: ["npm", "install", "-g", "opencode-ai"],
     },
   },
+  // ZAI Code (ZCode, Zhipu GLM) — GUI IDE (VS Code fork); reads <repo>/AGENTS.md natively.
+  // macOS-first; no verified brew cask / winget yet → manual install elsewhere.
+  zcode: {
+    gui: {
+      detect: () => process.platform === "darwin" ? macApp("ZCode.app") : false,
+      win32: null,
+      darwin: null,
+      linux: null,
+    },
+  },
   // Cursor (Anysphere) — GUI IDE. `which cursor` is unreliable (opt-in shell cmd) → detect app bundle / winget.
   cursor: {
     gui: {

@@ -20,7 +20,7 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`.
 
 Non-interactive (same install+configure, no prompts):
 ```bash
-node setup.js --tools all                        # set up all 6 tools (install + Context7 MCP)
+node setup.js --tools all                        # set up all 7 tools (install + Context7 MCP)
 node setup.js --tools claude,codex,opencode      # only these
 node setup.js --tools all --fresh                # fresh+backup existing MCP config
 node setup.js --tools all --no-deps              # don't auto-install Node.js/Homebrew

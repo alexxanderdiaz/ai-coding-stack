@@ -191,6 +191,13 @@ node install-experts.js . --tools claude,codex --experts api-backend-pro,code-re
 - **Writes require `--yes`** (the installer previews otherwise); `--dry-run` previews, `--force` overwrites.
 - Always review generated files before relying on them.
 
+**See what's available / installed:**
+```bash
+node install-experts.js . --list                 # catalog + trusted sources + installed in this project
+node install-experts.js . --list --installed     # only experts in .aics-experts.json
+node install-experts.js . --list --sources       # only the trusted-source allowlist
+```
+
 ### Live discovery from trusted collections
 Beyond the bundled catalog, `project-init` can pull best-fit skills/agents from a
 curated allowlist of popular collections (`catalog/sources.json`) — fetched, pinned,
@@ -265,7 +272,7 @@ The key is read from your environment and written using each tool's native env-i
 | `catalog/` | Vetted expert catalog + canonical specs |
 | `lib/match-experts.js` | Stack + purpose → expert shortlist |
 | `lib/render-expert.js` | Spec → per-tool native format |
-| `install-experts.js` | Install rendered experts into selected tools |
+| `install-experts.js` | Install rendered experts into selected tools (`--list` overviews catalog/sources/installed) |
 | `catalog/sources.json` | Trusted-source allowlist for live discovery |
 | `lib/fetch-source.js` | Clone (pinned) + host allowlist + symlink reject |
 | `lib/scan-source.js` | Enumerate skills/agents in a fetched source |

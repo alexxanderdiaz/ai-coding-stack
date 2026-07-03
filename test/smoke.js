@@ -294,5 +294,18 @@ try {
 } catch (e) { bad("install-experts generate threw: " + e.message); }
 fs.rmSync(gproj, { recursive: true, force: true });
 
+// 17. install-experts: dir omitted + value-taking flags must not be eaten as projectDir
+console.log("\ninstall-experts arg-parsing:");
+const aptmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-args-src-"));
+const approj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-args-proj-"));
+try {
+  fs.mkdirSync(path.join(aptmp, "agents"), { recursive: true });
+  fs.writeFileSync(path.join(aptmp, "agents", "rev.md"), "---\ndescription: Reviewer\n---\nReviews code.");
+  // No positional <dir>; value of --source-id must NOT become projectDir.
+  const out = execFileSync("node", [path.join(ROOT, "install-experts.js"), "--tools", "claude", "--source-id", "fix", "--source-path", aptmp, "--layout", "agents-dir", "--ref", "r1", "--pick", "rev", "--dry-run"], { encoding: "utf8", cwd: approj });
+  (out.includes("picks: rev") && !out.includes("directory not found")) ? ok("dir omitted: source-id value not eaten as projectDir") : bad("dir omitted: mis-parsed projectDir: " + out.trim());
+} catch (e) { bad("install-experts arg-parsing threw: " + e.message); }
+fs.rmSync(aptmp, { recursive: true, force: true }); fs.rmSync(approj, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

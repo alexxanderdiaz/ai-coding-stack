@@ -231,8 +231,20 @@ function doGenerate(projectDir, tools) {
   if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
 }
 
+// flags that consume the following token as their value (so that token is not <dir>)
+const VALUE_FLAGS = new Set(["--tools", "--experts", "--source-id", "--source-path", "--layout", "--ref", "--pick", "--spec-file", "--source-path-map"]);
+function resolveProjectDir() {
+  for (let i = 0; i < ARGV.length; i++) {
+    const a = ARGV[i];
+    if (a.startsWith("--")) continue;            // a flag
+    if (i > 0 && VALUE_FLAGS.has(ARGV[i - 1])) continue;  // value of the preceding flag
+    return path.resolve(a);                       // first real positional = <dir>
+  }
+  return path.resolve(process.cwd());             // dir omitted -> cwd
+}
+
 function main() {
-  const projectDir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--tools" && ARGV[i - 1] !== "--experts") || process.cwd());
+  const projectDir = resolveProjectDir();
   if (!fs.existsSync(projectDir)) { console.error(`install-experts: directory not found: ${projectDir}`); process.exit(1); }
   let tools = flagList("--tools");
   if (!tools.length || tools.includes("all")) tools = ALL_TOOLS;

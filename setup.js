@@ -31,6 +31,7 @@ const GLOBAL_SKILL_DIR = {
   codex: [".codex", "skills"],
   antigravity: [".gemini", "skills"],
   zcode: [".zcode", "skills"],
+  kimi: [".kimi", "daimon", "skills"],
 };
 
 const TOOL_META = {
@@ -41,6 +42,7 @@ const TOOL_META = {
   cursor: { label: "Cursor", hint: "IDE" },
   windsurf: { label: "Windsurf", hint: "IDE" },
   zcode: { label: "ZAI Code", hint: "IDE (ZCode)" },
+  kimi: { label: "Kimi", hint: "app (Moonshot)" },
 };
 const ALL_TOOLS = Object.keys(TOOL_META);
 

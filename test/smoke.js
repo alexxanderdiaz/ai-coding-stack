@@ -139,6 +139,12 @@ try {
   renderExpert(skillSpec, "zcode").subpath === "skills/python-pro/SKILL.md" ? ok("zcode skill -> skills/<id>/SKILL.md") : bad("zcode skill subpath wrong");
   renderExpert(skillSpec, "zcode").content.includes("name: python-pro") && renderExpert(skillSpec, "zcode").content.startsWith("---") ? ok("zcode skill frontmatter") : bad("zcode skill content wrong");
   try { renderExpert(spec, "zcode"); bad("zcode agent render not rejected"); } catch { ok("zcode rejects agent (skills-only)"); }
+  // Kimi (Moonshot) — global; skills ~/.kimi/daimon/skills/<id>/SKILL.md. SKILLS-ONLY (subagents are runtime-spawned by skills).
+  TOOLS.kimi && TOOLS.kimi.scope === "global" && TOOLS.kimi.dirName === ".kimi" ? ok("kimi in TOOLS (global, .kimi)") : bad("kimi missing/misconfigured in TOOLS");
+  supportsKind("kimi", "skill") && !supportsKind("kimi", "agent") ? ok("kimi is skills-only (supportsKind)") : bad("kimi kind support wrong");
+  renderExpert(skillSpec, "kimi").subpath === "daimon/skills/python-pro/SKILL.md" ? ok("kimi skill -> daimon/skills/<id>/SKILL.md") : bad("kimi skill subpath wrong");
+  renderExpert(skillSpec, "kimi").content.includes("name: python-pro") && renderExpert(skillSpec, "kimi").content.startsWith("---") ? ok("kimi skill frontmatter") : bad("kimi skill content wrong");
+  try { renderExpert(spec, "kimi"); bad("kimi agent render not rejected"); } catch { ok("kimi rejects agent (skills-only)"); }
   try { renderExpert({ meta: { id: "../evil", kind: "agent" }, body: "x" }, "claude"); bad("id traversal not blocked"); }
   catch { ok("rejects traversal id"); }
   try { renderExpert({ meta: { id: "ok", kind: "bogus" }, body: "x" }, "claude"); bad("bad kind not rejected"); }
@@ -162,6 +168,11 @@ try {
   (zdry.includes("~/.zcode/skills/python-pro/SKILL.md") && zdry.includes("GLOBAL")) ? ok("zcode dry-run -> ~/.zcode/skills/<id>/SKILL.md + GLOBAL warn") : bad("zcode skill dry-run wrong: " + zdry.trim().slice(0, 160));
   const zskip = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "zcode", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
   zskip.includes("skills-only") ? ok("zcode skips agent (skills-only) with note") : bad("zcode did not skip agent: " + zskip.trim().slice(0, 160));
+  // Kimi (global ~/.kimi/daimon/skills, skills-only) — dry-run only, never writes the real home dir in tests
+  const kdry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "kimi", "--experts", "python-pro", "--dry-run"], { encoding: "utf8" });
+  (kdry.includes("~/.kimi/daimon/skills/python-pro/SKILL.md") && kdry.includes("GLOBAL")) ? ok("kimi dry-run -> ~/.kimi/daimon/skills/<id>/SKILL.md + GLOBAL warn") : bad("kimi skill dry-run wrong: " + kdry.trim().slice(0, 160));
+  const kskip = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "kimi", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
+  kskip.includes("skills-only") ? ok("kimi skips agent (skills-only) with note") : bad("kimi did not skip agent: " + kskip.trim().slice(0, 160));
   !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("dry-run writes nothing") : bad("dry-run wrote files");
   execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer"], { stdio: "ignore" });
   !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("no write without --yes") : bad("wrote without --yes");

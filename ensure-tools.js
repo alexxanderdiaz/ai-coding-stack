@@ -115,6 +115,16 @@ const REG = {
       linux: null,
     },
   },
+  // Kimi (Moonshot) — desktop app (Electron); bundles the "daimon" coding agent + reads <repo>/AGENTS.md.
+  // macOS-first; no verified brew cask / winget → manual install elsewhere.
+  kimi: {
+    gui: {
+      detect: () => process.platform === "darwin" ? macApp("Kimi.app") : false,
+      win32: null,
+      darwin: null,
+      linux: null,
+    },
+  },
   // Cursor (Anysphere) — GUI IDE. `which cursor` is unreliable (opt-in shell cmd) → detect app bundle / winget.
   cursor: {
     gui: {
@@ -143,6 +153,7 @@ const MANUAL_URLS = {
   opencode: "https://opencode.ai",
   cursor: "https://cursor.com",
   windsurf: "https://windsurf.com",
+  kimi: "https://kimi.com",
 };
 
 // --- Prerequisite bootstrap: install the package managers the tools rely on ---

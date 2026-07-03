@@ -132,7 +132,7 @@ Set up which tools? (installs missing + configures all selected)
 **4. Install + configure**, per selected tool:
 - installs the CLI/GUI (or prints a download URL where there's no auto-installer),
 - writes **Context7 MCP** config (opencode/Cursor/Windsurf; Claude gets a `claude mcp add` one-liner),
-- installs the **`project-init` command** into the tool (Claude/opencode/Codex/Antigravity).
+- installs the **`project-init` command** into the tool (Claude/opencode/Codex/Antigravity/ZAI Code/Kimi).
 
 **5. Existing config** — only if a selected tool already has MCP servers:
 ```
@@ -166,7 +166,7 @@ node project-init.js . --about "what the project is"
 Auto-detects the stack — `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml` / Gradle / Docker, plus **Terraform** (`*.tf`), **Azure Bicep** (`*.bicep`), **Shell** (`*.sh`), and **Azure CLI / azd** (`azure.yaml` / `.azure/`) — → real `build`/`test`/`lint` commands (e.g. `terraform init/validate/fmt/plan`, `az bicep build/lint`, `shellcheck`). Writes the four files with lean, agents.md-2026 best-practice sections: **Goal · Commands · Structure · Non-obvious patterns · Permissions/boundaries · Conventions · Commits/PR · Continuity**. The agent fills *Structure* and *Non-obvious patterns* by inspecting the repo.
 
 ### Use it from inside a tool (skill)
-The setup wizard **already installs `project-init` as a command** into each compatible tool's global skills dir (Claude `~/.claude/skills/`, opencode `~/.config/opencode/skills/`, Codex `~/.codex/skills/`, Antigravity `~/.gemini/skills/`). So just open the tool in a project folder and say **“project-init”** / “set up this project” — it scaffolds `AGENTS.md` and downloads/configures the experts that project needs. (Cursor/Windsurf use per-project rules, no global command — run `node setup.js --init` there.)
+The setup wizard **already installs `project-init` as a command** into each compatible tool's global skills dir (Claude `~/.claude/skills/`, opencode `~/.config/opencode/skills/`, Codex `~/.codex/skills/`, Antigravity `~/.gemini/skills/`, ZAI Code `~/.zcode/skills/`, Kimi `~/.kimi/daimon/skills/`). So just open the tool in a project folder and say **“project-init”** / “set up this project” — it scaffolds `AGENTS.md` and downloads/configures the experts that project needs. (Cursor/Windsurf use per-project rules, no global command — run `node setup.js --init` there.)
 
 ---
 
@@ -183,11 +183,12 @@ node install-experts.js . --tools claude,codex --experts api-backend-pro,code-re
 
 - Experts come from a **bundled, vetted catalog** (`catalog/`) — offline, no third-party code.
 - Rendered per tool: Claude `.claude/agents/*.md`, Codex `~/.codex/agents/*.toml`,
-  Antigravity `.agent/workflows/*.md`; skills go to each tool's `skills/` dir.
-- **Claude/Antigravity install project-local; Codex installs globally (`~/.codex`, affects all projects).**
-  A project's `.codex/` therefore stays (almost) empty by design — the installer leaves a
-  `.codex/README.md` pointer so that's not mistaken for a failed install. The `.aics-experts.json`
-  manifest records which experts went to codex.
+  Antigravity `.agent/workflows/*.md`; skills go to each tool's `skills/` dir. ZAI Code and Kimi are
+  **skills-only** (they have no standalone subagent path) — agent-kind experts are skipped for them.
+- **Claude/Antigravity install project-local; Codex, ZAI Code, and Kimi install globally**
+  (`~/.codex`, `~/.zcode`, `~/.kimi` — affects all projects). A project's `.codex/` therefore stays
+  (almost) empty by design — the installer leaves a `.codex/README.md` pointer so that's not mistaken
+  for a failed install. The `.aics-experts.json` manifest records which experts went where.
 - **Writes require `--yes`** (the installer previews otherwise); `--dry-run` previews, `--force` overwrites.
 - Always review generated files before relying on them.
 

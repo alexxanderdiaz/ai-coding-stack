@@ -11,7 +11,7 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`.
 1. **Detect** → shows which tools are already installed (`✓`) vs missing.
 2. **Select** → arrow-key list, all preselected (space toggles). It installs the missing ones *and* applies config to the ones already installed.
 3. **Prerequisite bootstrap** → installs Node.js/npm if missing (apt/dnf/pacman/zypper/apk · Homebrew · winget). Skip with `--no-deps`.
-4. **Install + configure** → installs each missing tool, writes the ready-to-use **Context7 MCP** config for opencode/Cursor/Windsurf (Claude gets a `claude mcp add` one-liner; set `CONTEXT7_API_KEY` in your env so it resolves), and installs the **`project-init` command into each compatible tool** (Claude/opencode/Codex/Antigravity) so it's available in-session. Tools with no auto-installer on your OS (GUI IDEs on Linux) print a download URL.
+4. **Install + configure** → installs each missing tool, writes the ready-to-use **Context7 MCP** config for opencode/Cursor/Windsurf (Claude gets a `claude mcp add` one-liner; set `CONTEXT7_API_KEY` in your env so it resolves), and installs the **`project-init` command into each compatible tool** (Claude/opencode/Codex/Antigravity/ZAI Code/Kimi) so it's available in-session. Tools with no auto-installer on your OS (GUI IDEs on Linux) print a download URL.
 5. **Existing config** → if a selected tool already has MCP servers, the wizard asks once: **merge** (keep yours, add Context7) or **fresh + backup** (`.bak` then clean write).
 6. **Authenticate** (your own accounts) — printed at the end.
 7. **Scaffold now?** → optional prompt (default No) to run `project-init` on the current folder right away.
@@ -43,16 +43,18 @@ node /path/to/ai-coding-stack/project-init.js . --about "..." --with-experts
 ```
 
 ## From inside a tool (skill)
-Install the trigger once:
+Install the trigger once (the setup wizard does this for you; these are the manual paths):
 ```bash
 cp -r skills/project-init ~/.codex/skills/          # Codex
 cp -r skills/project-init ~/.gemini/skills/         # Antigravity
+cp -r skills/project-init ~/.zcode/skills/          # ZAI Code
+cp -r skills/project-init ~/.kimi/daimon/skills/    # Kimi
 ```
 Then in the tool's chat: **"project-init"** or "set up this project" → the agent runs it.
 
 ## Install experts (skills & agents)
 
-`install-experts.js` renders best-fit skills/agents to each tool's native format and writes them in. Quality-first, three layers + refresh. **Writes require `--yes`** — without it (or with `--dry-run`) you only get a preview. Installs are recorded in `.aics-experts.json` (provenance) at the project root. **Codex installs to GLOBAL `~/.codex` — it affects every project on the machine.**
+`install-experts.js` renders best-fit skills/agents to each tool's native format and writes them in. Quality-first, three layers + refresh. **Writes require `--yes`** — without it (or with `--dry-run`) you only get a preview. Installs are recorded in `.aics-experts.json` (provenance) at the project root. **Codex, ZAI Code, and Kimi install to GLOBAL (`~/.codex`, `~/.zcode`, `~/.kimi`) — they affect every project on the machine.** ZAI Code and Kimi are **skills-only** (no standalone subagent path); agent-kind experts are skipped for them.
 
 ### See what's available / installed
 ```bash

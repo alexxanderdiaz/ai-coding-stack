@@ -7,10 +7,11 @@ re-run it per tool. The prerequisite is that the tools are **installed**
 (`node ensure-tools.js all --check`), **not authenticated** — auth is only needed to *use* an
 agent later, not to scaffold.
 
-**Codex is global.** Codex resolves experts from `~/.codex` (machine-wide), so a project's
-`.codex/` stays (almost) empty after install. That's by design — `install-experts` leaves a
-`.codex/README.md` pointer so the empty dir isn't mistaken for a failed install, and the
-`.aics-experts.json` manifest records which experts went to Codex.
+**Some tools are global.** Codex, ZAI Code, and Kimi resolve experts from a machine-wide dir
+(`~/.codex`, `~/.zcode`, `~/.kimi` respectively), so a project's `.codex/` stays (almost) empty after
+install. That's by design — `install-experts` leaves a `.codex/README.md` pointer so the empty dir
+isn't mistaken for a failed install, and the `.aics-experts.json` manifest records which experts went
+where. ZAI Code and Kimi are **skills-only** (no standalone subagent path).
 
 One run writes four files at the project root:
 

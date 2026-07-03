@@ -5,9 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/); this project
 follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.3.0] - 2026-07-02
 ### Added
 - **Kimi (Moonshot) support:** the Kimi desktop app (which bundles the "daimon" coding agent) is now a first-class target — the eighth tool. It reads workspace `AGENTS.md` natively, and `install-experts` renders **skills** to `~/.kimi/daimon/skills/<id>/SKILL.md` (global scope; format verified against the app's bundled `skill-creator` guide + 20 builtin skills — identical Anthropic SKILL.md frontmatter). The skills root resolves to `~/.kimi/daimon/skills/` by default (overridable via `KIMI_SKILLS_ROOT`). **Skills-only:** like ZCode, Kimi has no standalone subagent install path — subagents are spawned at runtime by skills (e.g. the builtin `swarm-coding`), so agent-kind experts are skipped for kimi with a note. Detected by `/Applications/Kimi.app` on macOS via `ensure-tools` / `setup`.
-- **ZAI Code (ZCode, Zhipu GLM) support:** ZAI Code is now a first-class target alongside the other six tools. It reads workspace `AGENTS.md` natively (so `project-init` context works out of the box), and `install-experts` renders **skills** to `~/.zcode/skills/<id>/SKILL.md` (global scope, like Codex; format verified against the app's bundled `zcode-configuration-guide` and its own skills on disk — identical Claude/opencode frontmatter). **Skills-only:** ZCode has no standalone subagent install path — its `zcode.cjs` discovers subagents only inside a skill's or plugin's `agents/` subdir, or via the Settings → Subagents GUI (there is no top-level `~/.zcode/agents`). Agent-kind experts are therefore skipped for zcode with a note (add them via the GUI or a plugin). `supportsKind()` gates this; detected by `/Applications/ZCode.app` on macOS via `ensure-tools` / `setup`.
+- **ZAI Code (ZCode, Zhipu GLM) support:** ZAI Code is now a first-class target alongside the other tools. It reads workspace `AGENTS.md` natively (so `project-init` context works out of the box), and `install-experts` renders **skills** to `~/.zcode/skills/<id>/SKILL.md` (global scope, like Codex; format verified against the app's bundled `zcode-configuration-guide` and its own skills on disk — identical Claude/opencode frontmatter). **Skills-only:** ZCode has no standalone subagent install path — its `zcode.cjs` discovers subagents only inside a skill's or plugin's `agents/` subdir, or via the Settings → Subagents GUI (there is no top-level `~/.zcode/agents`). Agent-kind experts are therefore skipped for zcode with a note (add them via the GUI or a plugin). `supportsKind()` gates this; detected by `/Applications/ZCode.app` on macOS via `ensure-tools` / `setup`.
 - **`install-experts --list`:** read-only overview of what's installable and what's already in the project — bundled catalog experts, the trusted-source allowlist, and the experts recorded in `.aics-experts.json` (id, source, ref, tools). Narrow with `--catalog`, `--sources`, or `--installed`. Replaces `cat catalog/catalog.json` / `cat .aics-experts.json`.
 
 ### Changed
@@ -144,7 +146,10 @@ follows [Semantic Versioning](https://semver.org/).
 - `sync/backup.sh` + `restore.sh` (optional, env-configured, secrets excluded).
 - Docs (Architecture, Usage, project-init), smoke tests + CI, MIT license.
 
-[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.8...HEAD
+[Unreleased]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.10...v0.3.0
+[0.2.10]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.9...v0.2.10
+[0.2.9]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/alexxanderdiaz/ai-coding-stack/compare/v0.2.5...v0.2.6

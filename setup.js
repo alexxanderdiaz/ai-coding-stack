@@ -30,6 +30,7 @@ const GLOBAL_SKILL_DIR = {
   opencode: [".config", "opencode", "skills"],
   codex: [".codex", "skills"],
   antigravity: [".gemini", "skills"],
+  zcode: [".zcode", "skills"],
 };
 
 const TOOL_META = {
@@ -39,6 +40,7 @@ const TOOL_META = {
   opencode: { label: "opencode", hint: "CLI" },
   cursor: { label: "Cursor", hint: "IDE" },
   windsurf: { label: "Windsurf", hint: "IDE" },
+  zcode: { label: "ZAI Code", hint: "IDE (ZCode)" },
 };
 const ALL_TOOLS = Object.keys(TOOL_META);
 

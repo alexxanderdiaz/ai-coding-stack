@@ -24,6 +24,9 @@ const FORCE = ARGV.includes("--force");
 const PREVIEW = DRY || !YES;                 // approval gate: never write unless --yes
 const CATALOG_DIR = path.join(__dirname, "catalog");
 const ALL_TOOLS = Object.keys(TOOLS);
+// global-scope tools (codex -> ~/.codex, zcode -> ~/.zcode) install machine-wide, not per-project
+const GLOBAL_TOOLS = ALL_TOOLS.filter(t => TOOLS[t].scope === "global");
+const globalToolsIn = (tools) => tools.filter(t => GLOBAL_TOOLS.includes(t));
 
 function flagList(name) {
   const i = ARGV.indexOf(name);
@@ -154,7 +157,7 @@ function installFromSource(projectDir, tools) {
   const byName = Object.fromEntries(avail.map(a => [a.name, a]));
   const man = readManifest(projectDir);
   console.log(`install-experts (source ${sourceId}@${ref.slice(0,7)}) -> tools: ${tools.join(", ")} | picks: ${picks.join(", ")}${PREVIEW ? " (preview; --yes to write)" : ""}`);
-  if (tools.includes("codex") && !PREVIEW) console.log("  ! codex writes to GLOBAL ~/.codex — affects every project.");
+  if (!PREVIEW) { const g = globalToolsIn(tools); if (g.length) console.log(`  ! ${g.join(", ")} install(s) to GLOBAL (~) — affects every project.`); }
   for (const name of picks) {
     if (!VALID.test(name)) { console.log(`  ! invalid pick name: ${name}`); continue; }
     const item = byName[name];
@@ -211,7 +214,7 @@ function doGenerate(projectDir, tools) {
   if (spec.meta.kind !== "agent" && spec.meta.kind !== "skill") { console.error("generated spec needs kind agent|skill"); process.exit(1); }
   const man = readManifest(projectDir);
   console.log(`install-experts --generate ${id} (${spec.meta.kind}) -> tools: ${tools.join(", ")}${PREVIEW ? " (preview; --yes to write)" : ""}`);
-  if (tools.includes("codex") && !PREVIEW) console.log("  ! codex writes to GLOBAL ~/.codex.");
+  if (!PREVIEW) { const g = globalToolsIn(tools); if (g.length) console.log(`  ! ${g.join(", ")} install(s) to GLOBAL (~).`); }
   const installedTools = [];
   for (const tool of tools) {
     const t = TOOLS[tool]; if (!t) continue;
@@ -295,7 +298,7 @@ function main() {
   const byId = Object.fromEntries(catalog.experts.map(e => [e.id, e]));
   if (!ids.length) { console.log("No experts selected. Pass --experts id1,id2"); return; }
   console.log(`install-experts -> tools: ${tools.join(", ")} | experts: ${ids.join(", ")}${DRY ? " (dry-run)" : (PREVIEW ? " (preview; pass --yes to write)" : "")}`);
-  if (tools.includes("codex")) console.log("  ! codex writes to GLOBAL ~/.codex — affects every project on this machine.");
+  { const g = globalToolsIn(tools); if (g.length) console.log(`  ! ${g.join(", ")} install(s) to GLOBAL (~) — affects every project on this machine.`); }
   for (const id of ids) {
     const entry = byId[id];
     if (!entry) { console.log(`  ! unknown expert: ${id}`); continue; }

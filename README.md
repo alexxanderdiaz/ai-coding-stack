@@ -4,7 +4,7 @@
 
 **A portable toolkit for AI coding tools — install them, and scaffold any project with cross-tool context + session continuity. Windows · Linux · macOS.**
 
-Works with **Claude Code · Codex · Antigravity · opencode · Cursor · Windsurf** (and any tool that reads `AGENTS.md`).
+Works with **Claude Code · Codex · Antigravity · opencode · Cursor · Windsurf · ZAI Code** (and any tool that reads `AGENTS.md` — e.g. **Kimi** loads workspace `AGENTS.md` for instructions).
 
 ![Platform](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-blue)
 ![Core](https://img.shields.io/badge/core-Node.js-green)
@@ -18,7 +18,7 @@ Works with **Claude Code · Codex · Antigravity · opencode · Cursor · Windsu
 
 ## What it does
 
-1. **Sets up the tools (first-run wizard)** — `node setup.js` detects which of Claude Code, Codex, Antigravity, opencode, Cursor, Windsurf are installed, then in one step **installs the missing ones and applies the ready-to-use config** (Context7 MCP) to every selected tool — new *and* already-installed. Missing package managers (Node.js/Homebrew) are bootstrapped automatically. If a tool already has MCP config, the wizard asks once: **merge** (keep yours, add Context7) or **fresh + backup** (`.bak`). You authenticate each with your own account afterwards.
+1. **Sets up the tools (first-run wizard)** — `node setup.js` detects which of Claude Code, Codex, Antigravity, opencode, Cursor, Windsurf, ZAI Code are installed, then in one step **installs the missing ones and applies the ready-to-use config** (Context7 MCP) to every selected tool — new *and* already-installed. Missing package managers (Node.js/Homebrew) are bootstrapped automatically. If a tool already has MCP config, the wizard asks once: **merge** (keep yours, add Context7) or **fresh + backup** (`.bak`). You authenticate each with your own account afterwards.
 2. **Scaffolds projects** (`project-init`, a separate later step) — auto-detects your stack and writes a lean, best-practice context file set so any AI coding tool understands your project from the first prompt:
    - `AGENTS.md` — **single source of truth**, cross-tool (Codex, Antigravity, Cursor, opencode, Windsurf).
    - `CLAUDE.md` — short pointer to AGENTS.md (Claude Code).

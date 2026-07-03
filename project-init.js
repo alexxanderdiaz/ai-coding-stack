@@ -2,9 +2,9 @@
 /**
  * project-init — scaffold a project for the best AI-coding-agent experience.
  * Cross-tool: writes CLAUDE.md (Claude Code), AGENTS.md (Codex, Antigravity,
- * Cursor, opencode, Windsurf — all read AGENTS.md natively; the cross-tool
- * standard), GEMINI.md (Antigravity-specific pointer), and STATE.md (a
- * session-continuity log). Auto-detects the stack and fills real build/test/lint
+ * Cursor, opencode, Windsurf, ZAI Code (Kimi reads it too) — all read AGENTS.md
+ * natively; the cross-tool standard), GEMINI.md (Antigravity-specific pointer),
+ * and STATE.md (a session-continuity log). Auto-detects the stack and fills real build/test/lint
  * commands. No external dependencies.
  *
  * AGENTS.md is the single source of truth; CLAUDE.md and GEMINI.md are short
@@ -83,7 +83,7 @@ ${cmdLines}
 
   if (stackList.length) console.log(`>> Detected: ${stackList.join(", ")} | commands: ${Object.keys(det.commands).join(",") || "none"}`);
   if (det.isEmpty) console.log(`>> Stack not recognized — describe the project with --about, and consider discovering skills/agents for your stack online.`);
-  console.log(`>> Ready for Claude Code + Codex + Antigravity + opencode + Cursor + Windsurf (AGENTS.md is read by all; CLAUDE.md / GEMINI.md / STATE.md).`);
+  console.log(`>> Ready for Claude Code + Codex + Antigravity + opencode + Cursor + Windsurf + ZAI Code (AGENTS.md is read by all, incl. Kimi; CLAUDE.md / GEMINI.md / STATE.md).`);
   if (ARGV.includes("--with-experts")) {
     const ids = (() => {
       try {

@@ -12,7 +12,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { parseSpec, renderExpert, TOOLS } = require(path.join(__dirname, "lib", "render-expert.js"));
+const { parseSpec, renderExpert, supportsKind, TOOLS } = require(path.join(__dirname, "lib", "render-expert.js"));
 const { scanSource } = require(path.join(__dirname, "lib", "scan-source.js"));
 const { rejectSymlinks, fetchSource } = require(path.join(__dirname, "lib", "fetch-source.js"));
 const sources = (() => { try { return require(path.join(__dirname, "catalog", "sources.json")).sources; } catch { return []; } })();
@@ -112,6 +112,7 @@ function doUpdate(projectDir, tools) {
     const useTools = targetTools || rec.tools || [];
     for (const tool of useTools) {
       const t = TOOLS[tool]; if (!t) continue;
+      if (!supportsKind(tool, item.type)) { console.log(`  = [${tool}] skills-only — skip ${item.type} ${rec.id}`); continue; }
       if (item.type === "skill") {
         if (t.renderSkill) {  // single-file rule tools (cursor/windsurf): SKILL.md -> one rule file
           const sp = parseSpec(fs.readFileSync(path.join(item.dir, "SKILL.md"), "utf8"));
@@ -165,6 +166,7 @@ function installFromSource(projectDir, tools) {
     const installedTools = [];
     for (const tool of tools) {
       const t = TOOLS[tool]; if (!t) continue;
+      if (!supportsKind(tool, item.type)) { console.log(`  = [${tool}] skills-only — skip ${item.type} ${name}`); continue; }
       if (item.type === "skill") {
         if (t.renderSkill) {  // single-file rule tools (cursor/windsurf): SKILL.md -> one rule file
           const sp = parseSpec(fs.readFileSync(path.join(item.dir, "SKILL.md"), "utf8"));
@@ -218,6 +220,7 @@ function doGenerate(projectDir, tools) {
   const installedTools = [];
   for (const tool of tools) {
     const t = TOOLS[tool]; if (!t) continue;
+    if (!supportsKind(tool, spec.meta.kind)) { console.log(`  = [${tool}] skills-only — skip ${spec.meta.kind} ${id}`); continue; }
     const { subpath, content } = renderExpert(spec, tool);
     const dest = safeJoin(baseDir(tool, projectDir), subpath);
     if (PREVIEW) { console.log(`  would write [${tool}] ${subpath}`); continue; }
@@ -305,6 +308,7 @@ function main() {
     if (!entry.source || entry.source.type !== "bundled") { console.log(`  ! ${id}: only bundled specs supported in this version`); continue; }
     const spec = parseSpec(fs.readFileSync(safeCatalogSpec(entry.spec), "utf8"));
     for (const tool of tools) {
+      if (!supportsKind(tool, spec.meta.kind)) { console.log(`  = [${tool}] skills-only — skip ${spec.meta.kind} ${id}`); continue; }
       const { subpath, content } = renderExpert(spec, tool);
       const dest = safeJoin(baseDir(tool, projectDir), subpath);
       const where = TOOLS[tool].scope === "global" ? "~/" + TOOLS[tool].dirName : TOOLS[tool].dirName;

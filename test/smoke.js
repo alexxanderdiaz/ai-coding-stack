@@ -132,13 +132,13 @@ try {
   ag.subpath === "workflows/code-reviewer.md" ? ok("antigravity workflow .md") : bad("antigravity render wrong");
   const skillSpec = parseSpec(fs.readFileSync(path.join(ROOT, "catalog", "specs", "python-pro.md"), "utf8"));
   renderExpert(skillSpec, "claude").subpath === "skills/python-pro/SKILL.md" ? ok("skill -> SKILL.md") : bad("skill subpath wrong");
-  // ZAI Code (ZCode) — global; skills ~/.zcode/skills/<id>/SKILL.md, agents ~/.zcode/cli/agents/<id>.md
-  const { TOOLS } = require(path.join(ROOT, "lib", "render-expert.js"));
+  // ZAI Code (ZCode) — global; skills ~/.zcode/skills/<id>/SKILL.md. SKILLS-ONLY (no standalone agent path).
+  const { TOOLS, supportsKind } = require(path.join(ROOT, "lib", "render-expert.js"));
   TOOLS.zcode && TOOLS.zcode.scope === "global" && TOOLS.zcode.dirName === ".zcode" ? ok("zcode in TOOLS (global, .zcode)") : bad("zcode missing/misconfigured in TOOLS");
+  supportsKind("zcode", "skill") && !supportsKind("zcode", "agent") ? ok("zcode is skills-only (supportsKind)") : bad("zcode kind support wrong");
   renderExpert(skillSpec, "zcode").subpath === "skills/python-pro/SKILL.md" ? ok("zcode skill -> skills/<id>/SKILL.md") : bad("zcode skill subpath wrong");
   renderExpert(skillSpec, "zcode").content.includes("name: python-pro") && renderExpert(skillSpec, "zcode").content.startsWith("---") ? ok("zcode skill frontmatter") : bad("zcode skill content wrong");
-  const zc = renderExpert(spec, "zcode");
-  zc.subpath === "cli/agents/code-reviewer.md" && zc.content.startsWith("---") && zc.content.includes("name: code-reviewer") ? ok("zcode agent -> cli/agents/<id>.md") : bad("zcode agent render wrong");
+  try { renderExpert(spec, "zcode"); bad("zcode agent render not rejected"); } catch { ok("zcode rejects agent (skills-only)"); }
   try { renderExpert({ meta: { id: "../evil", kind: "agent" }, body: "x" }, "claude"); bad("id traversal not blocked"); }
   catch { ok("rejects traversal id"); }
   try { renderExpert({ meta: { id: "ok", kind: "bogus" }, body: "x" }, "claude"); bad("bad kind not rejected"); }
@@ -157,9 +157,11 @@ const itmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-exp-"));
 try {
   const dry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
   dry.includes("agents/code-reviewer.md") ? ok("dry-run lists claude agent path") : bad("dry-run path missing");
-  // ZAI Code (global ~/.zcode) — dry-run only, never writes the real home dir in tests
-  const zdry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "zcode", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
-  (zdry.includes("~/.zcode/cli/agents/code-reviewer.md") && zdry.includes("GLOBAL")) ? ok("zcode dry-run -> ~/.zcode/cli/agents + GLOBAL warn") : bad("zcode dry-run wrong: " + zdry.trim().slice(0, 160));
+  // ZAI Code (global ~/.zcode, skills-only) — dry-run only, never writes the real home dir in tests
+  const zdry = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "zcode", "--experts", "python-pro", "--dry-run"], { encoding: "utf8" });
+  (zdry.includes("~/.zcode/skills/python-pro/SKILL.md") && zdry.includes("GLOBAL")) ? ok("zcode dry-run -> ~/.zcode/skills/<id>/SKILL.md + GLOBAL warn") : bad("zcode skill dry-run wrong: " + zdry.trim().slice(0, 160));
+  const zskip = execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "zcode", "--experts", "code-reviewer", "--dry-run"], { encoding: "utf8" });
+  zskip.includes("skills-only") ? ok("zcode skips agent (skills-only) with note") : bad("zcode did not skip agent: " + zskip.trim().slice(0, 160));
   !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("dry-run writes nothing") : bad("dry-run wrote files");
   execFileSync("node", [path.join(ROOT, "install-experts.js"), itmp, "--tools", "claude", "--experts", "code-reviewer"], { stdio: "ignore" });
   !fs.existsSync(path.join(itmp, ".claude", "agents", "code-reviewer.md")) ? ok("no write without --yes") : bad("wrote without --yes");

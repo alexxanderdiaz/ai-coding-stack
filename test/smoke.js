@@ -294,5 +294,31 @@ try {
 } catch (e) { bad("install-experts generate threw: " + e.message); }
 fs.rmSync(gproj, { recursive: true, force: true });
 
+// 17. install-experts: dir omitted + value-taking flags must not be eaten as projectDir
+console.log("\ninstall-experts arg-parsing:");
+const aptmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-args-src-"));
+const approj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-args-proj-"));
+try {
+  fs.mkdirSync(path.join(aptmp, "agents"), { recursive: true });
+  fs.writeFileSync(path.join(aptmp, "agents", "rev.md"), "---\ndescription: Reviewer\n---\nReviews code.");
+  // No positional <dir>; value of --source-id must NOT become projectDir.
+  const out = execFileSync("node", [path.join(ROOT, "install-experts.js"), "--tools", "claude", "--source-id", "fix", "--source-path", aptmp, "--layout", "agents-dir", "--ref", "r1", "--pick", "rev", "--dry-run"], { encoding: "utf8", cwd: approj });
+  (out.includes("picks: rev") && !out.includes("directory not found")) ? ok("dir omitted: source-id value not eaten as projectDir") : bad("dir omitted: mis-parsed projectDir: " + out.trim());
+} catch (e) { bad("install-experts arg-parsing threw: " + e.message); }
+fs.rmSync(aptmp, { recursive: true, force: true }); fs.rmSync(approj, { recursive: true, force: true });
+
+// 18. install-experts --list prints catalog + sources (+ installed when manifest present)
+console.log("\ninstall-experts --list:");
+const lproj = fs.mkdtempSync(path.join(os.tmpdir(), "aics-list-"));
+try {
+  const out = execFileSync("node", [path.join(ROOT, "install-experts.js"), lproj, "--list"], { encoding: "utf8" });
+  (out.includes("Catalog") && out.includes("code-reviewer") && out.includes("Trusted sources") && out.includes("wshobson-agents")) ? ok("list: catalog + sources") : bad("list missing catalog/sources: " + out.trim().slice(0, 200));
+  (!out.includes("Installed") || out.includes("none")) ? ok("list: no installed when manifest absent") : bad("list fabricated installed section");
+  fs.writeFileSync(path.join(lproj, ".aics-experts.json"), JSON.stringify({ version: 1, experts: [{ id: "code-reviewer", type: "agent", source: "bundled", sourcePath: "(authored)", ref: "abc123", installedAt: "2026-05-01T00:00:00Z", tools: ["claude"], layout: "generated" }] }));
+  const out2 = execFileSync("node", [path.join(ROOT, "install-experts.js"), lproj, "--list", "--installed"], { encoding: "utf8" });
+  (out2.includes("Installed") && out2.includes("code-reviewer") && out2.includes("claude") && out2.includes("abc123")) ? ok("list --installed shows installed expert + tools + ref") : bad("list --installed wrong: " + out2.trim().slice(0, 200));
+} catch (e) { bad("install-experts --list threw: " + e.message); }
+fs.rmSync(lproj, { recursive: true, force: true });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

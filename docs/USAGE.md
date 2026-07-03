@@ -54,6 +54,14 @@ Then in the tool's chat: **"project-init"** or "set up this project" → the age
 
 `install-experts.js` renders best-fit skills/agents to each tool's native format and writes them in. Quality-first, three layers + refresh. **Writes require `--yes`** — without it (or with `--dry-run`) you only get a preview. Installs are recorded in `.aics-experts.json` (provenance) at the project root. **Codex installs to GLOBAL `~/.codex` — it affects every project on the machine.**
 
+### See what's available / installed
+```bash
+node install-experts.js . --list                 # catalog + trusted sources + installed (in this project)
+node install-experts.js . --list --installed     # only what's already in .aics-experts.json
+node install-experts.js . --list --sources       # only the trusted-source allowlist
+node install-experts.js . --list --catalog       # only the bundled catalog
+```
+
 ### Layer 1 — bundled catalog (offline)
 ```bash
 node install-experts.js . --tools claude,codex --experts code-reviewer,api-backend-pro --dry-run

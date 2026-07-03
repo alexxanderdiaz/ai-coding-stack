@@ -231,12 +231,62 @@ function doGenerate(projectDir, tools) {
   if (PREVIEW && !DRY) console.log("Preview only — re-run with --yes to write.");
 }
 
+// flags that consume the following token as their value (so that token is not <dir>)
+const VALUE_FLAGS = new Set(["--tools", "--experts", "--source-id", "--source-path", "--layout", "--ref", "--pick", "--spec-file", "--source-path-map"]);
+function resolveProjectDir() {
+  for (let i = 0; i < ARGV.length; i++) {
+    const a = ARGV[i];
+    if (a.startsWith("--")) continue;            // a flag
+    if (i > 0 && VALUE_FLAGS.has(ARGV[i - 1])) continue;  // value of the preceding flag
+    return path.resolve(a);                       // first real positional = <dir>
+  }
+  return path.resolve(process.cwd());             // dir omitted -> cwd
+}
+
+// Read-only overview: what's installable (catalog + trusted sources) and what's
+// already installed in <dir>/.aics-experts.json. Narrow with --catalog / --sources / --installed.
+function doList(projectDir) {
+  const wantCatalog   = ARGV.includes("--catalog");
+  const wantSources   = ARGV.includes("--sources");
+  const wantInstalled = ARGV.includes("--installed");
+  const all = !wantCatalog && !wantSources && !wantInstalled;
+  const pad = (s, n) => (s + " ".repeat(n)).slice(0, n);
+
+  if (all || wantCatalog) {
+    const catalog = require(path.join(CATALOG_DIR, "catalog.json"));
+    console.log(`Catalog (bundled, ${catalog.experts.length}):`);
+    for (const e of catalog.experts) {
+      console.log(`  ${pad(e.id, 20)} ${pad(e.kind, 7)} ${e.description}`);
+    }
+  }
+  if (all || wantSources) {
+    console.log(`\nTrusted sources (${sources.length}):`);
+    for (const s of sources) {
+      console.log(`  ${pad(s.id, 28)} ${pad(s.layout, 28)} ${pad(s.license, 5)} [${(s.tags || []).join(", ")}]`);
+      console.log(`    ${s.repo}`);
+    }
+  }
+  if (all || wantInstalled) {
+    const man = readManifest(projectDir);
+    const recs = man.experts || [];
+    if (!recs.length) {
+      console.log(`\nInstalled: none (no .aics-experts.json in ${projectDir})`);
+    } else {
+      console.log(`\nInstalled (${projectDir}, ${recs.length}):`);
+      for (const r of recs) {
+        console.log(`  ${pad(r.id, 20)} ${pad(r.type || "?", 7)} source=${r.source}  ref=${(r.ref || "").slice(0, 7)}  tools=${(r.tools || []).join(",")}`);
+      }
+    }
+  }
+}
+
 function main() {
-  const projectDir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--tools" && ARGV[i - 1] !== "--experts") || process.cwd());
+  const projectDir = resolveProjectDir();
   if (!fs.existsSync(projectDir)) { console.error(`install-experts: directory not found: ${projectDir}`); process.exit(1); }
   let tools = flagList("--tools");
   if (!tools.length || tools.includes("all")) tools = ALL_TOOLS;
   tools = [...new Set(tools)].filter(t => ALL_TOOLS.includes(t));
+  if (ARGV.includes("--list")) return doList(projectDir);
   if (ARGV.includes("--generate")) return doGenerate(projectDir, tools);
   if (ARGV.includes("--update")) { const ut = ARGV.includes("--tools") ? tools : []; return doUpdate(projectDir, ut); }
   if (ARGV.includes("--source-id")) return installFromSource(projectDir, tools);

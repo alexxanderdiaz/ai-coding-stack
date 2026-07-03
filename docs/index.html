@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ai-coding-stack — one setup for every AI coding tool</title>
+<meta name="description" content="A portable toolkit that installs Claude Code, Codex, Antigravity, opencode, Cursor, Windsurf, ZAI Code, and Kimi — and scaffolds any project with cross-tool AGENTS.md context and session continuity. Windows · Linux · macOS.">
+<meta property="og:title" content="ai-coding-stack">
+<meta property="og:description" content="One setup for every AI coding tool. Install them all + scaffold any project with cross-tool context.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0b0f17; --bg2:#111722; --panel:#141b28; --panel2:#1a2333;
+    --line:#22304a; --text:#e6edf6; --muted:#94a3b8; --dim:#64748b;
+    --accent:#7dd3fc; --accent2:#a78bfa; --green:#4ade80; --amber:#fbbf24;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --max:1080px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+    line-height:1.6;font-size:17px;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:10;background:rgba(11,15,23,.8);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--text)}
+  .brand .bolt{font-size:22px}
+  nav .links{display:flex;gap:22px;font-size:15px}
+  nav .links a{color:var(--muted)}
+  nav .links a:hover{color:var(--text);text-decoration:none}
+  @media(max-width:640px){nav .links{display:none}}
+
+  /* hero */
+  .hero{padding:90px 0 70px;text-align:center;
+    background:radial-gradient(60% 60% at 50% 0%,rgba(125,211,252,.10),transparent 70%)}
+  .badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+  .badges img{height:22px}
+  h1{font-size:clamp(34px,6vw,56px);line-height:1.08;margin:0 0 18px;letter-spacing:-.02em;
+    background:linear-gradient(180deg,#fff,#aab8cc);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .lede{font-size:clamp(17px,2.4vw,21px);color:var(--muted);max-width:680px;margin:0 auto 34px}
+  .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:34px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:10px;
+    font-weight:600;font-size:16px;border:1px solid transparent;transition:.15s}
+  .btn-primary{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#04121f}
+  .btn-primary:hover{text-decoration:none;filter:brightness(1.08)}
+  .btn-ghost{background:var(--panel);border-color:var(--line);color:var(--text)}
+  .btn-ghost:hover{text-decoration:none;border-color:var(--accent)}
+
+  /* install */
+  .install{max-width:520px;margin:0 auto;text-align:left}
+  .install .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 18px;font-family:var(--mono);font-size:15px;display:flex;align-items:center;
+    gap:10px;overflow-x:auto}
+  .install .box .prompt{color:var(--dim)}
+  .install .box code{color:var(--green)}
+  .copy{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    border-radius:7px;padding:5px 11px;font-size:13px;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+  .copy:hover{color:var(--text);border-color:var(--accent)}
+
+  /* tools */
+  section{padding:64px 0;border-top:1px solid var(--line)}
+  h2{font-size:clamp(26px,4vw,34px);margin:0 0 10px;letter-spacing:-.01em}
+  .sec-sub{color:var(--muted);margin:0 0 36px;font-size:18px}
+  .tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .tool{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 16px;
+    text-align:center;transition:.15s}
+  .tool:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .tool .name{font-weight:600;font-size:16px}
+  .tool .tag{color:var(--dim);font-size:13px;margin-top:3px}
+  .tool .emoji{font-size:26px;display:block;margin-bottom:8px}
+
+  /* features */
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  .feat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 24px}
+  .feat .ic{font-size:24px;margin-bottom:12px}
+  .feat h3{margin:0 0 8px;font-size:19px}
+  .feat p{margin:0;color:var(--muted);font-size:15.5px}
+  .feat code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:14px;color:var(--accent)}
+
+  /* steps */
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:16px}
+  .steps li{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px 20px 64px;position:relative}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:20px;top:20px;
+    width:30px;height:30px;border-radius:50%;background:linear-gradient(180deg,#38bdf8,#0ea5e9);
+    color:#04121f;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .steps li b{color:var(--text)}
+  .steps li code{background:var(--bg2);padding:1px 6px;border-radius:5px;color:var(--accent);font-size:14px}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:40px 0;color:var(--dim);font-size:15px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><span class="bolt">⚡</span> ai-coding-stack</a>
+    <div class="links">
+      <a href="#tools">Tools</a>
+      <a href="#features">Features</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="https://github.com/alexxanderdiaz/ai-coding-stack">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="badges">
+      <img alt="npm" src="https://img.shields.io/npm/v/ai-coding-stack?color=4ade80&label=npm">
+      <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
+      <img alt="platforms" src="https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-blue">
+      <img alt="node" src="https://img.shields.io/badge/core-Node.js-green">
+    </div>
+    <h1>One setup for every AI&nbsp;coding tool.</h1>
+    <p class="lede">A portable toolkit that installs <b>Claude Code, Codex, Antigravity, opencode, Cursor, Windsurf, ZAI Code,</b> and <b>Kimi</b> — and scaffolds any project with cross-tool <code>AGENTS.md</code> context and session continuity.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#quickstart">Get started →</a>
+      <a class="btn btn-ghost" href="https://github.com/alexxanderdiaz/ai-coding-stack">View on GitHub</a>
+    </div>
+    <div class="install">
+      <div class="box">
+        <span class="prompt">$</span><code>npx ai-coding-stack</code>
+        <button class="copy" onclick="navigator.clipboard.writeText('npx ai-coding-stack')">copy</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="tools">
+  <div class="wrap">
+    <h2>Eight tools, one command</h2>
+    <p class="sec-sub">Detects what's installed, installs the missing ones, and applies ready-to-use config — all in one wizard pass.</p>
+    <div class="tools">
+      <div class="tool"><span class="emoji">🤖</span><div class="name">Claude Code</div><div class="tag">CLI + app</div></div>
+      <div class="tool"><span class="emoji">🟢</span><div class="name">Codex</div><div class="tag">CLI</div></div>
+      <div class="tool"><span class="emoji">🛰️</span><div class="name">Antigravity</div><div class="tag">IDE</div></div>
+      <div class="tool"><span class="emoji">⌨️</span><div class="name">opencode</div><div class="tag">CLI</div></div>
+      <div class="tool"><span class="emoji">🖱️</span><div class="name">Cursor</div><div class="tag">IDE</div></div>
+      <div class="tool"><span class="emoji">🌊</span><div class="name">Windsurf</div><div class="tag">IDE</div></div>
+      <div class="tool"><span class="emoji">🧩</span><div class="name">ZAI Code</div><div class="tag">IDE (ZCode)</div></div>
+      <div class="tool"><span class="emoji">🌙</span><div class="name">Kimi</div><div class="tag">app (Moonshot)</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <h2>What it does</h2>
+    <p class="sec-sub">Beyond installing the tools — it makes them work together on your projects.</p>
+    <div class="features">
+      <div class="feat">
+        <div class="ic">🪄</div>
+        <h3>First-run wizard</h3>
+        <p>Detects installed tools, installs the missing ones, and applies config (Context7 MCP + the in-tool <code>project-init</code> command) to every selected tool — new <i>and</i> already-installed.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">📄</div>
+        <h3>Cross-tool context</h3>
+        <p>Writes a single <code>AGENTS.md</code> (the cross-tool standard) plus pointers, with auto-detected real build/test/lint commands. Every tool reads the same source of truth.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🎓</div>
+        <h3>Expert discovery</h3>
+        <p>A bundled vetted catalog + live trusted sources + on-demand generation. Best-fit skills/agents rendered to each tool's <i>native</i> format — Claude <code>.md</code>, Codex <code>.toml</code>, Cursor rules, and more.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🔌</div>
+        <h3>MCP propagation</h3>
+        <p>Writes Context7 (and other MCP servers) into each tool's native config with env-interpolation — your API key never touches disk, only the environment.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🔁</div>
+        <h3>Session continuity</h3>
+        <p>Stop a session, switch tools, come back tomorrow. <code>catchup</code> / <code>wrapup</code> keep a <code>STATE.md</code> log (a Stop hook snapshots git in Claude Code).</p>
+      </div>
+      <div class="feat">
+        <div class="ic">💻</div>
+        <h3>Cross-platform</h3>
+        <p>Windows (winget), Linux (apt/dnf/pacman/zypper/apk), macOS (Homebrew). Zero runtime dependencies — just Node.js ≥ 16.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <p class="sec-sub">Three ways in. No account needed to set up — you authenticate each tool with your own.</p>
+    <ol class="steps">
+      <li><b>One-shot (recommended):</b> run <code>npx ai-coding-stack</code> for the interactive wizard, or clone &amp; run <code>./setup.sh</code>.<br>
+        <code>git clone https://github.com/alexxanderdiaz/ai-coding-stack.git &amp;&amp; cd ai-coding-stack &amp;&amp; ./setup.sh</code></li>
+      <li><b>Non-interactive:</b> <code>node setup.js --tools all</code> sets up all eight tools in one go.</li>
+      <li><b>Scaffold a project:</b> in any tool, say <code>project-init</code> (or run <code>node project-init.js . --about "what it is"</code>) — writes <code>AGENTS.md</code> + configures the experts that project needs.</li>
+    </ol>
+    <p style="margin-top:28px"><a class="btn btn-ghost" href="https://github.com/alexxanderdiaz/ai-coding-stack/blob/main/docs/USAGE.md">Full usage docs →</a></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>MIT licensed · <a href="https://github.com/alexxanderdiaz/ai-coding-stack">alexxanderdiaz/ai-coding-stack</a></div>
+    <div>
+      <a href="https://www.npmjs.com/package/ai-coding-stack">npm</a> ·
+      <a href="https://github.com/alexxanderdiaz/ai-coding-stack/releases">releases</a> ·
+      <a href="https://github.com/alexxanderdiaz/ai-coding-stack/blob/main/docs/USAGE.md">docs</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

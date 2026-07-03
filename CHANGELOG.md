@@ -8,6 +8,9 @@ follows [Semantic Versioning](https://semver.org/).
 ### Added
 - **`install-experts --list`:** read-only overview of what's installable and what's already in the project — bundled catalog experts, the trusted-source allowlist, and the experts recorded in `.aics-experts.json` (id, source, ref, tools). Narrow with `--catalog`, `--sources`, or `--installed`. Replaces `cat catalog/catalog.json` / `cat .aics-experts.json`.
 
+### Changed
+- **`project-init` arg parsing hardened (preventive):** the root `project-init.js` and the bundled `skills/project-init/project-init.js` resolved `<dir>` with a heuristic that only excluded the `--about` value. Today `--about` is the only value-taking flag, so nothing was broken, but any future `--flag <value>` would have had its value mis-read as the project directory. Both now use a `VALUE_FLAGS` set (matching `install-experts`) so the contract is explicit and future-proof. Regression tests added.
+
 ### Fixed
 - **`install-experts` dir-omission arg parsing:** when `<dir>` was omitted, the value of any value-taking flag other than `--tools`/`--experts` (`--source-id`, `--pick`, `--layout`, `--ref`, `--spec-file`, `--source-path`, `--source-path-map`) was mis-read as the project directory, producing `directory not found` on the flag value itself. All value-taking flags are now enumerated and their following token skipped; `<dir>` correctly falls back to the current directory.
 

@@ -19,7 +19,10 @@ const ARGV = process.argv.slice(2);
 const GEMINI = ARGV.includes("--gemini");
 const FORCE = ARGV.includes("--force");
 const ABOUT = (() => { const i = ARGV.indexOf("--about"); return i >= 0 ? (ARGV[i + 1] || "") : ""; })();
-const dir = ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--about") || process.cwd();
+// value-taking flags: their following token is a value, NOT the <dir> positional.
+// Add any new "--flag <value>" here so its value isn't mis-read as the project dir.
+const VALUE_FLAGS = new Set(["--about"]);
+const dir = ARGV.find((a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.has(ARGV[i - 1]))) || process.cwd();
 const has = (f) => { try { return fs.existsSync(path.join(dir, f)); } catch { return false; } };
 const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return null; } };
 const readText = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8"); } catch { return ""; } };

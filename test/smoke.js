@@ -52,6 +52,23 @@ try {
 } catch (e) { bad("project-init threw: " + e.message); }
 fs.rmSync(tmp, { recursive: true, force: true });
 
+// 3b. project-init: <dir> omitted -> cwd used; a value-taking flag's value is NOT eaten as dir
+console.log("\nproject-init dir resolution:");
+const rtmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-resolve-"));
+try {
+  execFileSync("node", [path.join(ROOT, "project-init.js"), "--about", "alpha beta", "--force"], { stdio: "ignore", cwd: rtmp });
+  fs.existsSync(path.join(rtmp, "AGENTS.md")) ? ok("root: dir omitted -> cwd") : bad("root: nothing written to cwd");
+  (!fs.existsSync(path.join(rtmp, "alpha")) && !fs.existsSync(path.join(rtmp, "beta"))) ? ok("root: --about value not eaten as dir") : bad("root: --about value became a dir");
+} catch (e) { bad("root project-init dir resolution threw: " + e.message); }
+fs.rmSync(rtmp, { recursive: true, force: true });
+const rbtmp = fs.mkdtempSync(path.join(os.tmpdir(), "aics-resolve-bundled-"));
+try {
+  execFileSync("node", [path.join(ROOT, "skills", "project-init", "project-init.js"), "--about", "alpha beta", "--gemini", "--force"], { stdio: "ignore", cwd: rbtmp });
+  fs.existsSync(path.join(rbtmp, "AGENTS.md")) ? ok("bundled: dir omitted -> cwd") : bad("bundled: nothing written to cwd");
+  (!fs.existsSync(path.join(rbtmp, "alpha")) && !fs.existsSync(path.join(rbtmp, "beta"))) ? ok("bundled: --about value not eaten as dir") : bad("bundled: --about value became a dir");
+} catch (e) { bad("bundled project-init dir resolution threw: " + e.message); }
+fs.rmSync(rbtmp, { recursive: true, force: true });
+
 // 4. ensure-tools --check runs (no install)
 console.log("\nensure-tools:");
 try { execFileSync("node", [path.join(ROOT, "ensure-tools.js"), "all", "--check"], { stdio: "ignore" }); ok("ensure-tools --check runs"); }

@@ -20,7 +20,10 @@ const { detectStack } = require(path.join(__dirname, "lib", "detect-stack.js"));
 const ARGV = process.argv.slice(2);
 const FORCE = ARGV.includes("--force");
 const ABOUT = (() => { const i = ARGV.indexOf("--about"); return i >= 0 ? (ARGV[i + 1] || "") : ""; })();
-const dir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && ARGV[i - 1] !== "--about") || process.cwd());
+// value-taking flags: their following token is a value, NOT the <dir> positional.
+// Add any new "--flag <value>" here so its value isn't mis-read as the project dir.
+const VALUE_FLAGS = new Set(["--about"]);
+const dir = path.resolve(ARGV.find((a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.has(ARGV[i - 1]))) || process.cwd());
 
 function isoDate() { const d = new Date(); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
 
